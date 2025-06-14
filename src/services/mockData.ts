@@ -2,34 +2,34 @@ import { Shop, Product, Reservation, ShopOwner } from '@/types';
 
 // Mock shop owners for login
 export const mockShopOwners: ShopOwner[] = [
-  { id: 'owner_001', name: 'Sarah Johnson', email: 'sarah@sunnydaleGifts.com' },
-  { id: 'owner_002', name: 'Mike Chen', email: 'mike@chicagodeli.com' },
-  { id: 'owner_003', name: 'Emma Rodriguez', email: 'emma@manhattansouvenirs.com' },
+  { id: 'owner_001', name: 'Sarah Johnson', email: 'sarah@brooklynbites.com' },
+  { id: 'owner_002', name: 'Mike Chen', email: 'mike@maplecrafts.com' },
+  { id: 'owner_003', name: 'Emma Rodriguez', email: 'emma@sunsetsouvenirs.com' },
 ];
 
 // Initial mock data with USA context
 const initialShops: Shop[] = [
   {
     id: 'shop_001',
-    name: 'Sunnydale Gifts',
-    category: 'Gifts',
-    location: 'Downtown LA',
+    name: 'Brooklyn Bites',
+    category: 'Food',
+    location: 'Near Sunset Blvd, LA',
     hours: '9am–8pm',
     ownerId: 'owner_001'
   },
   {
     id: 'shop_002',
-    name: 'Chicago Deli',
-    category: 'Food',
-    location: '5th Avenue',
+    name: 'Maple Crafts',
+    category: 'Gifts',
+    location: 'Downtown Portland',
     hours: '7am–9pm',
     ownerId: 'owner_002'
   },
   {
     id: 'shop_003',
-    name: 'Manhattan Souvenirs',
+    name: 'Sunset Souvenirs',
     category: 'Souvenirs',
-    location: 'Times Square',
+    location: 'Venice Beach Boardwalk',
     hours: '10am–10pm',
     ownerId: 'owner_003'
   }
@@ -39,56 +39,56 @@ const initialProducts: Product[] = [
   {
     id: 'prod_001',
     shopId: 'shop_001',
-    name: 'Handcrafted Candles',
+    name: 'Pumpkin Pie',
     image: '/placeholder.svg',
-    price: 25,
-    description: 'Beautiful scented candles made locally',
+    price: 18,
+    description: 'Fresh homemade pumpkin pie with whipped cream',
     stock: 8
   },
   {
     id: 'prod_002',
     shopId: 'shop_001',
-    name: 'Artisan Photo Frame',
+    name: 'Apple Cider Donuts',
     image: '/placeholder.svg',
-    price: 35,
-    description: 'Elegant wooden photo frames',
-    stock: 3
+    price: 12,
+    description: 'Warm cinnamon sugar donuts, perfect for fall',
+    stock: 5
   },
   {
     id: 'prod_003',
     shopId: 'shop_002',
-    name: 'Pumpkin Pie',
+    name: 'Handmade Candles',
     image: '/placeholder.svg',
-    price: 18,
-    description: 'Fresh homemade pumpkin pie',
-    stock: 5
+    price: 25,
+    description: 'Artisan soy candles with natural scents',
+    stock: 3
   },
   {
     id: 'prod_004',
     shopId: 'shop_002',
-    name: 'Maple Syrup',
+    name: 'Wooden Photo Frame',
     image: '/placeholder.svg',
-    price: 22,
-    description: 'Pure Vermont maple syrup',
+    price: 35,
+    description: 'Handcrafted maple wood picture frame',
     stock: 0
   },
   {
     id: 'prod_005',
     shopId: 'shop_003',
-    name: 'NYC T-shirt',
+    name: 'Yosemite Keychain',
     image: '/placeholder.svg',
-    price: 28,
-    description: 'Classic New York City souvenir t-shirt',
+    price: 8,
+    description: 'Metal keychain featuring Yosemite National Park',
     stock: 12
   },
   {
     id: 'prod_006',
     shopId: 'shop_003',
-    name: 'Statue of Liberty Keychain',
+    name: 'California Postcard Set',
     image: '/placeholder.svg',
-    price: 8,
-    description: 'Iconic Statue of Liberty metal keychain',
-    stock: 1
+    price: 15,
+    description: 'Beautiful vintage-style postcards of California landmarks',
+    stock: 7
   }
 ];
 

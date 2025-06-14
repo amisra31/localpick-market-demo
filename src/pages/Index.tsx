@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { mockDataService } from "@/services/mockData";
 import { ProductWithShop } from "@/types";
-import { Search, MapPin, Clock, ShoppingBag, Eye, Store } from "lucide-react";
+import { Search, MapPin, Clock, ShoppingBag, Eye, Store, Settings, BarChart3 } from "lucide-react";
 
 const Index = () => {
   const [products, setProducts] = useState<ProductWithShop[]>([]);
@@ -239,8 +239,8 @@ const Index = () => {
                       <span className="font-medium">{product.shop.name}</span>
                     </div>
                     <div className="flex items-center gap-2">
-                      <MapPin className="w-4 h-4" />
-                      <span>{product.shop.location}</span>
+                      <MapPin className="w-4 h-4 text-orange-500" />
+                      <span>📍 {product.shop.location}</span>
                     </div>
                     <div className="flex items-center gap-2">
                       <Clock className="w-4 h-4" />
@@ -280,20 +280,71 @@ const Index = () => {
         )}
       </div>
 
+      {/* Business Access Section */}
+      <div className="bg-white border-t border-gray-200 mt-16">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+          <div className="text-center mb-8">
+            <h3 className="text-2xl font-semibold text-gray-900 mb-2">Business Access</h3>
+            <p className="text-gray-600">Manage your shop or access administrative tools</p>
+          </div>
+          
+          <div className="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto">
+            <Card className="group hover:shadow-xl transition-all duration-300 border-2 border-emerald-200 hover:border-emerald-300 bg-gradient-to-br from-emerald-50 to-teal-50">
+              <CardHeader className="text-center pb-4">
+                <div className="w-16 h-16 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-2xl flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform duration-200">
+                  <Settings className="w-8 h-8 text-white" />
+                </div>
+                <CardTitle className="text-xl text-gray-900">Shop Owners</CardTitle>
+                <CardDescription className="text-gray-600">
+                  Manage your shop profile, add products, and track inventory
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="text-center">
+                <Link to="/manage-shop">
+                  <Button className="w-full h-12 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white text-lg font-semibold shadow-lg group-hover:shadow-xl transition-all duration-200">
+                    <Store className="w-5 h-5 mr-2" />
+                    Manage Your Shop
+                  </Button>
+                </Link>
+              </CardContent>
+            </Card>
+
+            <Card className="group hover:shadow-xl transition-all duration-300 border-2 border-blue-200 hover:border-blue-300 bg-gradient-to-br from-blue-50 to-indigo-50">
+              <CardHeader className="text-center pb-4">
+                <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-2xl flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform duration-200">
+                  <BarChart3 className="w-8 h-8 text-white" />
+                </div>
+                <CardTitle className="text-xl text-gray-900">Administrators</CardTitle>
+                <CardDescription className="text-gray-600">
+                  Monitor marketplace activity, shops, and customer reservations
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="text-center">
+                <Link to="/admin-dashboard">
+                  <Button className="w-full h-12 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white text-lg font-semibold shadow-lg group-hover:shadow-xl transition-all duration-200">
+                    <BarChart3 className="w-5 h-5 mr-2" />
+                    Admin Dashboard
+                  </Button>
+                </Link>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      </div>
+
       {/* Footer */}
-      <footer className="bg-white border-t border-gray-200 mt-16">
+      <footer className="bg-gray-900 text-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="flex flex-col sm:flex-row justify-between items-center space-y-4 sm:space-y-0">
-            <div className="text-gray-600">
-              © 2024 LocalPick. Supporting local businesses.
+            <div className="flex items-center space-x-3">
+              <div className="w-8 h-8 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-lg flex items-center justify-center">
+                <Store className="w-5 h-5 text-white" />
+              </div>
+              <span className="text-gray-300">© 2024 LocalPick. Supporting local businesses.</span>
             </div>
-            <div className="flex space-x-6">
-              <Link to="/manage-shop" className="text-gray-600 hover:text-gray-900 transition-colors text-sm">
-                Manage Shop
-              </Link>
-              <Link to="/admin-dashboard" className="text-gray-600 hover:text-gray-900 transition-colors text-sm">
-                Admin Portal
-              </Link>
+            <div className="flex items-center space-x-2 text-gray-400">
+              <MapPin className="w-4 h-4 text-orange-400" />
+              <span className="text-sm">Serving neighborhoods across America</span>
             </div>
           </div>
         </div>
