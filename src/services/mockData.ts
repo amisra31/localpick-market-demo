@@ -1,3 +1,4 @@
+
 import { Shop, Product, Reservation, ShopOwner } from '@/types';
 
 // Mock shop owners for login
@@ -40,7 +41,7 @@ const initialProducts: Product[] = [
     id: 'prod_001',
     shopId: 'shop_001',
     name: 'Pumpkin Pie',
-    image: '/placeholder.svg',
+    image: 'https://images.unsplash.com/photo-1571115764595-644a1f56a55c?w=400&h=400&fit=crop&crop=center',
     price: 18,
     description: 'Fresh homemade pumpkin pie with whipped cream',
     stock: 8
@@ -49,7 +50,7 @@ const initialProducts: Product[] = [
     id: 'prod_002',
     shopId: 'shop_001',
     name: 'Apple Cider Donuts',
-    image: '/placeholder.svg',
+    image: 'https://images.unsplash.com/photo-1551024506-0bccd828d307?w=400&h=400&fit=crop&crop=center',
     price: 12,
     description: 'Warm cinnamon sugar donuts, perfect for fall',
     stock: 5
@@ -58,7 +59,7 @@ const initialProducts: Product[] = [
     id: 'prod_003',
     shopId: 'shop_002',
     name: 'Handmade Candles',
-    image: '/placeholder.svg',
+    image: 'https://images.unsplash.com/photo-1602874801006-5dec0c9c44e8?w=400&h=400&fit=crop&crop=center',
     price: 25,
     description: 'Artisan soy candles with natural scents',
     stock: 3
@@ -67,7 +68,7 @@ const initialProducts: Product[] = [
     id: 'prod_004',
     shopId: 'shop_002',
     name: 'Wooden Photo Frame',
-    image: '/placeholder.svg',
+    image: 'https://images.unsplash.com/photo-1513475382585-d06e58bcb0e0?w=400&h=400&fit=crop&crop=center',
     price: 35,
     description: 'Handcrafted maple wood picture frame',
     stock: 0
@@ -76,7 +77,7 @@ const initialProducts: Product[] = [
     id: 'prod_005',
     shopId: 'shop_003',
     name: 'Yosemite Keychain',
-    image: '/placeholder.svg',
+    image: 'https://images.unsplash.com/photo-1544735716-392fe2489ffa?w=400&h=400&fit=crop&crop=center',
     price: 8,
     description: 'Metal keychain featuring Yosemite National Park',
     stock: 12
@@ -85,7 +86,7 @@ const initialProducts: Product[] = [
     id: 'prod_006',
     shopId: 'shop_003',
     name: 'California Postcard Set',
-    image: '/placeholder.svg',
+    image: 'https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=400&h=400&fit=crop&crop=center',
     price: 15,
     description: 'Beautiful vintage-style postcards of California landmarks',
     stock: 7
