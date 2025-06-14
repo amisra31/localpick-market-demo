@@ -1,3 +1,4 @@
+
 import { Shop, Product, Reservation, ShopOwner } from '@/types';
 
 // Mock shop owners for login
@@ -40,7 +41,7 @@ const initialProducts: Product[] = [
     id: 'prod_001',
     shopId: 'shop_001',
     name: 'Pumpkin Pie',
-    image: 'https://images.unsplash.com/photo-1571115764595-644a1f56a55c?w=400&h=400&fit=crop&crop=center',
+    image: 'https://images.unsplash.com/photo-1606890737304-57a1ca8a5b62?w=400&h=400&fit=crop&crop=center',
     price: 18,
     description: 'Fresh homemade pumpkin pie with whipped cream',
     stock: 8
@@ -49,7 +50,7 @@ const initialProducts: Product[] = [
     id: 'prod_002',
     shopId: 'shop_001',
     name: 'Apple Cider Donuts',
-    image: 'https://images.unsplash.com/photo-1551024506-0bccd828d307?w=400&h=400&fit=crop&crop=center',
+    image: 'https://images.unsplash.com/photo-1551024709-8f23befc6f87?w=400&h=400&fit=crop&crop=center',
     price: 12,
     description: 'Warm cinnamon sugar donuts, perfect for fall',
     stock: 5

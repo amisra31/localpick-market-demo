@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { mockDataService } from "@/services/mockData";
 import { ProductWithShop } from "@/types";
-import { ArrowLeft, Search, ShoppingBag } from "lucide-react";
+import { ArrowLeft, Search, ShoppingBag, Store, MapPin, Clock } from "lucide-react";
 
 const CustomerBrowse = () => {
   const [products, setProducts] = useState<ProductWithShop[]>([]);
@@ -171,11 +171,17 @@ const CustomerBrowse = () => {
             {filteredProducts.map((product) => (
               <Card key={product.id} className="hover:shadow-lg transition-shadow">
                 <CardHeader className="pb-3">
-                  <div className="aspect-square w-full bg-gray-100 rounded-md mb-3 flex items-center justify-center">
+                  <div className="aspect-square w-full bg-gradient-to-br from-gray-100 to-gray-200 rounded-xl mb-3 flex items-center justify-center overflow-hidden">
                     <img 
                       src={product.image} 
                       alt={product.name}
-                      className="w-16 h-16 object-cover opacity-50"
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                      loading="lazy"
+                      onError={(e) => {
+                        console.log('Image failed to load:', product.image);
+                        e.currentTarget.src = 'https://images.unsplash.com/photo-1560472354-b33ff0c44a43?w=400&h=400&fit=crop&crop=center';
+                        e.currentTarget.alt = 'Product placeholder';
+                      }}
                     />
                   </div>
                   <CardTitle className="text-lg">{product.name}</CardTitle>
@@ -186,16 +192,25 @@ const CustomerBrowse = () => {
                 <CardContent>
                   <div className="space-y-3">
                     <div className="flex items-center justify-between">
-                      <span className="text-2xl font-bold text-green-600">₹{product.price}</span>
+                      <span className="text-2xl font-bold text-green-600">${product.price}</span>
                       <Badge variant={product.stock > 0 ? "default" : "destructive"}>
                         {product.stock > 0 ? `${product.stock} in stock` : "Out of Stock"}
                       </Badge>
                     </div>
                     
-                    <div className="text-sm text-gray-600">
-                      <p><strong>Shop:</strong> {product.shop.name}</p>
-                      <p><strong>Location:</strong> {product.shop.location}</p>
-                      <p><strong>Hours:</strong> {product.shop.hours}</p>
+                    <div className="space-y-2 text-sm text-gray-600">
+                      <div className="flex items-center gap-2">
+                        <Store className="w-4 h-4" />
+                        <span className="font-medium">{product.shop.name}</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <MapPin className="w-4 h-4 text-orange-500" />
+                        <span>📍 {product.shop.location}</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Clock className="w-4 h-4" />
+                        <span>{product.shop.hours}</span>
+                      </div>
                     </div>
 
                     <Link to={`/product/${product.id}`}>
