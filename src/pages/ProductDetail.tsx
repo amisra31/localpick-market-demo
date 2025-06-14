@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -111,11 +110,16 @@ const ProductDetail = () => {
           {/* Product Image */}
           <Card>
             <CardContent className="p-6">
-              <div className="aspect-square w-full bg-gray-100 rounded-lg flex items-center justify-center">
+              <div className="aspect-square w-full bg-gradient-to-br from-gray-100 to-gray-200 rounded-lg flex items-center justify-center overflow-hidden">
                 <img 
                   src={product.image} 
                   alt={product.name}
-                  className="w-32 h-32 object-cover opacity-50"
+                  className="w-full h-full object-cover"
+                  onError={(e) => {
+                    console.log('Image failed to load:', product.image);
+                    e.currentTarget.src = 'https://images.unsplash.com/photo-1560472354-b33ff0c44a43?w=400&h=400&fit=crop&crop=center';
+                    e.currentTarget.alt = 'Product placeholder';
+                  }}
                 />
               </div>
             </CardContent>
@@ -140,7 +144,7 @@ const ProductDetail = () => {
               <CardContent>
                 <div className="space-y-4">
                   <div className="text-4xl font-bold text-green-600">
-                    ₹{product.price}
+                    ${product.price}
                   </div>
 
                   <div className="space-y-2">
