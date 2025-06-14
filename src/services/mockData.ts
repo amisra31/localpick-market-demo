@@ -1,37 +1,36 @@
-
 import { Shop, Product, Reservation, ShopOwner } from '@/types';
 
 // Mock shop owners for login
 export const mockShopOwners: ShopOwner[] = [
-  { id: 'owner_001', name: 'Rajesh Kumar', email: 'rajesh@gangasweets.com' },
-  { id: 'owner_002', name: 'Priya Sharma', email: 'priya@creamygifts.com' },
-  { id: 'owner_003', name: 'Amit Singh', email: 'amit@delhisouvenirs.com' },
+  { id: 'owner_001', name: 'Sarah Johnson', email: 'sarah@sunnydaleGifts.com' },
+  { id: 'owner_002', name: 'Mike Chen', email: 'mike@chicagodeli.com' },
+  { id: 'owner_003', name: 'Emma Rodriguez', email: 'emma@manhattansouvenirs.com' },
 ];
 
-// Initial mock data
+// Initial mock data with USA context
 const initialShops: Shop[] = [
   {
     id: 'shop_001',
-    name: 'Ganga Sweets',
-    category: 'Food',
-    location: 'Sector 5',
-    hours: '10am–9pm',
+    name: 'Sunnydale Gifts',
+    category: 'Gifts',
+    location: 'Downtown LA',
+    hours: '9am–8pm',
     ownerId: 'owner_001'
   },
   {
     id: 'shop_002',
-    name: 'Creamy Gifts',
-    category: 'Gifts',
-    location: 'Connaught Place',
-    hours: '9am–10pm',
+    name: 'Chicago Deli',
+    category: 'Food',
+    location: '5th Avenue',
+    hours: '7am–9pm',
     ownerId: 'owner_002'
   },
   {
     id: 'shop_003',
-    name: 'Delhi Souvenirs',
+    name: 'Manhattan Souvenirs',
     category: 'Souvenirs',
-    location: 'Red Fort Area',
-    hours: '8am–8pm',
+    location: 'Times Square',
+    hours: '10am–10pm',
     ownerId: 'owner_003'
   }
 ];
@@ -40,38 +39,56 @@ const initialProducts: Product[] = [
   {
     id: 'prod_001',
     shopId: 'shop_001',
-    name: 'Besan Ladoo',
+    name: 'Handcrafted Candles',
     image: '/placeholder.svg',
-    price: 120,
-    description: 'Fresh homemade ladoos made with pure ghee',
-    stock: 5
+    price: 25,
+    description: 'Beautiful scented candles made locally',
+    stock: 8
   },
   {
     id: 'prod_002',
     shopId: 'shop_001',
-    name: 'Gulab Jamun',
+    name: 'Artisan Photo Frame',
     image: '/placeholder.svg',
-    price: 80,
-    description: 'Soft and spongy gulab jamuns in sugar syrup',
-    stock: 0
+    price: 35,
+    description: 'Elegant wooden photo frames',
+    stock: 3
   },
   {
     id: 'prod_003',
     shopId: 'shop_002',
-    name: 'Handmade Candles',
+    name: 'Pumpkin Pie',
     image: '/placeholder.svg',
-    price: 250,
-    description: 'Beautiful aromatic handmade candles',
-    stock: 3
+    price: 18,
+    description: 'Fresh homemade pumpkin pie',
+    stock: 5
   },
   {
     id: 'prod_004',
-    shopId: 'shop_003',
-    name: 'Mini Taj Mahal',
+    shopId: 'shop_002',
+    name: 'Maple Syrup',
     image: '/placeholder.svg',
-    price: 500,
-    description: 'Decorative miniature Taj Mahal replica',
-    stock: 2
+    price: 22,
+    description: 'Pure Vermont maple syrup',
+    stock: 0
+  },
+  {
+    id: 'prod_005',
+    shopId: 'shop_003',
+    name: 'NYC T-shirt',
+    image: '/placeholder.svg',
+    price: 28,
+    description: 'Classic New York City souvenir t-shirt',
+    stock: 12
+  },
+  {
+    id: 'prod_006',
+    shopId: 'shop_003',
+    name: 'Statue of Liberty Keychain',
+    image: '/placeholder.svg',
+    price: 8,
+    description: 'Iconic Statue of Liberty metal keychain',
+    stock: 1
   }
 ];
 
