@@ -1,4 +1,3 @@
-
 import { Shop, Product, Reservation, ShopOwner } from '@/types';
 
 // Mock shop owners for login
@@ -103,12 +102,11 @@ class MockDataService {
   }
 
   private loadData() {
-    const savedShops = localStorage.getItem('localpick_shops');
-    const savedProducts = localStorage.getItem('localpick_products');
+    // Force reset with new American context data
+    this.shops = [...initialShops];
+    this.products = [...initialProducts];
+    
     const savedReservations = localStorage.getItem('localpick_reservations');
-
-    this.shops = savedShops ? JSON.parse(savedShops) : initialShops;
-    this.products = savedProducts ? JSON.parse(savedProducts) : initialProducts;
     this.reservations = savedReservations ? JSON.parse(savedReservations) : [];
 
     this.saveData();

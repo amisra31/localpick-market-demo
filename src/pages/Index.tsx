@@ -18,6 +18,9 @@ const Index = () => {
   const [shopFilter, setShopFilter] = useState("all");
 
   useEffect(() => {
+    // Clear any cached data to ensure fresh American data loads
+    localStorage.removeItem('localpick_shops');
+    localStorage.removeItem('localpick_products');
     loadProducts();
   }, []);
 
@@ -28,6 +31,9 @@ const Index = () => {
   const loadProducts = () => {
     const allProducts = mockDataService.getProducts();
     const allShops = mockDataService.getShops();
+    
+    console.log('Loaded products:', allProducts);
+    console.log('Loaded shops:', allShops);
     
     const productsWithShop: ProductWithShop[] = allProducts.map(product => {
       const shop = allShops.find(s => s.id === product.shopId);
@@ -215,9 +221,11 @@ const Index = () => {
                       src={product.image} 
                       alt={product.name}
                       className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                      loading="lazy"
                       onError={(e) => {
-                        e.currentTarget.src = '/placeholder.svg';
-                        e.currentTarget.className = "w-20 h-20 object-cover opacity-60 group-hover:opacity-80 transition-opacity";
+                        console.log('Image failed to load:', product.image);
+                        e.currentTarget.src = 'https://images.unsplash.com/photo-1560472354-b33ff0c44a43?w=400&h=400&fit=crop&crop=center';
+                        e.currentTarget.alt = 'Product placeholder';
                       }}
                     />
                   </div>
