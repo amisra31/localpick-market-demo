@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -6,6 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
+import { AuthHeader } from "@/components/auth/AuthHeader";
 import { mockDataService } from "@/services/mockData";
 import { ProductWithShop } from "@/types";
 import { Search, MapPin, Clock, ShoppingBag, Eye, Store, Settings, BarChart3 } from "lucide-react";
@@ -100,16 +100,20 @@ const Index = () => {
                 <p className="text-sm text-gray-500">Your neighborhood marketplace</p>
               </div>
             </div>
-            <Link to="/my-reservations">
-              <Button variant="outline" className="gap-2 hover:bg-blue-50 transition-colors">
-                <ShoppingBag className="w-4 h-4" />
-                My Reservations ({getReservationCount()})
-              </Button>
-            </Link>
+            <div className="flex items-center space-x-4">
+              <Link to="/my-reservations">
+                <Button variant="outline" className="gap-2 hover:bg-blue-50 transition-colors">
+                  <ShoppingBag className="w-4 h-4" />
+                  My Reservations ({getReservationCount()})
+                </Button>
+              </Link>
+              <AuthHeader />
+            </div>
           </div>
         </div>
       </header>
 
+      {/* Hero Section */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Hero Section */}
         <div className="text-center mb-12">
