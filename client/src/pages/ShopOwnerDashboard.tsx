@@ -1,6 +1,6 @@
 
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -9,15 +9,15 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { mockDataService, mockShopOwners } from "@/services/mockData";
-import { Shop, Product, ShopOwner } from "@/types";
+import { useAuth } from "@/contexts/AuthContext";
+import { mockDataService } from "@/services/mockData";
+import { Shop, Product } from "@/types";
 import { toast } from "@/hooks/use-toast";
-import { ArrowLeft, Plus, Edit, Trash2, LogOut } from "lucide-react";
-import { Link } from "react-router-dom";
+import { ArrowLeft, Plus, Edit, Trash2, LogOut, Store, Package } from "lucide-react";
 
 const ShopOwnerDashboard = () => {
   const navigate = useNavigate();
-  const [currentOwner, setCurrentOwner] = useState<ShopOwner | null>(null);
+  const { user, signOut } = useAuth();
   const [shop, setShop] = useState<Shop | null>(null);
   const [products, setProducts] = useState<Product[]>([]);
   const [isShopDialogOpen, setIsShopDialogOpen] = useState(false);
@@ -41,21 +41,14 @@ const ShopOwnerDashboard = () => {
   });
 
   useEffect(() => {
-    const ownerId = localStorage.getItem('localpick_current_owner');
-    if (!ownerId) {
-      navigate('/shop-owner-login');
+    // Check if user is authenticated and is a merchant
+    if (!user || user.role !== 'merchant') {
+      navigate('/login');
       return;
     }
 
-    const owner = mockShopOwners.find(o => o.id === ownerId);
-    if (!owner) {
-      navigate('/shop-owner-login');
-      return;
-    }
-
-    setCurrentOwner(owner);
-    
-    const ownerShop = mockDataService.getShopByOwnerId(ownerId);
+    // Load shop data for the merchant
+    const ownerShop = mockDataService.getShopByOwnerId(user.id);
     if (ownerShop) {
       setShop(ownerShop);
       setShopForm({
@@ -66,21 +59,21 @@ const ShopOwnerDashboard = () => {
       });
       loadProducts(ownerShop.id);
     }
-  }, [navigate]);
+  }, [user, navigate]);
 
   const loadProducts = (shopId: string) => {
     const shopProducts = mockDataService.getProductsByShopId(shopId);
     setProducts(shopProducts);
   };
 
-  const handleLogout = () => {
-    localStorage.removeItem('localpick_current_owner');
-    navigate('/shop-owner-login');
+  const handleLogout = async () => {
+    await signOut();
+    navigate('/');
   };
 
   const handleShopSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!currentOwner) return;
+    if (!user) return;
 
     try {
       if (shop) {

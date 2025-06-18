@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -13,11 +13,27 @@ import { Search, MapPin, Clock, ShoppingBag, Eye, Store, Settings, BarChart3 } f
 
 const Index = () => {
   const { user, isAuthenticated } = useAuth();
+  const navigate = useNavigate();
   const [products, setProducts] = useState<ProductWithShop[]>([]);
   const [filteredProducts, setFilteredProducts] = useState<ProductWithShop[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [shopFilter, setShopFilter] = useState("all");
+
+  // Redirect users to their appropriate dashboards based on role
+  useEffect(() => {
+    if (isAuthenticated && user) {
+      if (user.role === 'merchant') {
+        navigate('/shop-owner-dashboard');
+        return;
+      }
+      if (user.role === 'admin') {
+        navigate('/admin-dashboard');
+        return;
+      }
+      // Only customers (role === 'user') stay on this homepage
+    }
+  }, [isAuthenticated, user, navigate]);
 
   useEffect(() => {
     // Clear any cached data to ensure fresh American data loads
