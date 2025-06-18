@@ -1,24 +1,25 @@
 
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { supabase } from '@/lib/supabase';
-import { User, Session } from '@supabase/supabase-js';
 
 export type UserRole = 'user' | 'merchant' | 'admin';
 
-export interface AuthUser extends User {
-  role?: UserRole;
+export interface AuthUser {
+  id: string;
+  email: string;
+  role: UserRole;
   shop_id?: string;
+  name?: string;
 }
 
 interface AuthContextType {
   user: AuthUser | null;
-  session: Session | null;
   loading: boolean;
   signIn: (email: string, password: string) => Promise<{ data: any; error: any }>;
   signUp: (email: string, password: string, role: UserRole, shopData?: any) => Promise<{ data: any; error: any }>;
   signOut: () => Promise<void>;
   hasRole: (role: UserRole) => boolean;
   canAccessRoute: (requiredRole: UserRole) => boolean;
+  isAuthenticated: boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -31,115 +32,71 @@ export const useAuth = () => {
   return context;
 };
 
+// Demo users for authentication
+const demoUsers = [
+  { id: '1', email: 'customer@demo.com', password: 'demo123', role: 'user' as UserRole, name: 'Customer Demo' },
+  { id: '2', email: 'merchant@demo.com', password: 'demo123', role: 'merchant' as UserRole, name: 'Merchant Demo', shop_id: 'shop_001' },
+  { id: '3', email: 'admin@demo.com', password: 'demo123', role: 'admin' as UserRole, name: 'Admin Demo' }
+];
+
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<AuthUser | null>(null);
-  const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Check if Supabase is properly configured
-    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-    const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
-    
-    if (!supabaseUrl || !supabaseAnonKey) {
-      console.warn('Supabase not configured. Authentication will not work.');
-      setLoading(false);
-      return;
+    // Check for existing session in localStorage
+    const savedUser = localStorage.getItem('localpick_user');
+    if (savedUser) {
+      try {
+        setUser(JSON.parse(savedUser));
+      } catch (error) {
+        console.error('Error parsing saved user:', error);
+        localStorage.removeItem('localpick_user');
+      }
     }
-
-    // Get initial session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      if (session?.user) {
-        fetchUserProfile(session.user);
-      } else {
-        setLoading(false);
-      }
-    });
-
-    // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      setSession(session);
-      if (session?.user) {
-        await fetchUserProfile(session.user);
-      } else {
-        setUser(null);
-        setLoading(false);
-      }
-    });
-
-    return () => subscription.unsubscribe();
+    setLoading(false);
   }, []);
 
-  const fetchUserProfile = async (authUser: User) => {
-    try {
-      const { data: profile, error } = await supabase
-        .from('user_profiles')
-        .select('role, shop_id')
-        .eq('id', authUser.id)
-        .single();
-
-      if (error) {
-        console.error('Error fetching user profile:', error);
-        setUser(authUser as AuthUser);
-      } else {
-        setUser({
-          ...authUser,
-          role: profile.role,
-          shop_id: profile.shop_id
-        });
-      }
-    } catch (error) {
-      console.error('Error in fetchUserProfile:', error);
-      setUser(authUser as AuthUser);
-    } finally {
-      setLoading(false);
-    }
-  };
-
   const signIn = async (email: string, password: string) => {
-    const result = await supabase.auth.signInWithPassword({ email, password });
-    return result;
+    const demoUser = demoUsers.find(u => u.email === email && u.password === password);
+    
+    if (demoUser) {
+      const authUser: AuthUser = {
+        id: demoUser.id,
+        email: demoUser.email,
+        role: demoUser.role,
+        name: demoUser.name,
+        shop_id: demoUser.shop_id
+      };
+      
+      setUser(authUser);
+      localStorage.setItem('localpick_user', JSON.stringify(authUser));
+      
+      return { data: { user: authUser }, error: null };
+    }
+    
+    return { data: null, error: { message: 'Invalid credentials' } };
   };
 
   const signUp = async (email: string, password: string, role: UserRole, shopData?: any) => {
-    const result = await supabase.auth.signUp({ email, password });
+    // For demo purposes, simulate signup
+    const newUser: AuthUser = {
+      id: Date.now().toString(),
+      email,
+      role,
+      name: email.split('@')[0],
+      shop_id: role === 'merchant' ? `shop_${Date.now()}` : undefined
+    };
     
-    if (result.data.user && !result.error) {
-      // Create user profile
-      const { error: profileError } = await supabase
-        .from('user_profiles')
-        .insert({
-          id: result.data.user.id,
-          email: email,
-          role: role,
-          created_at: new Date().toISOString()
-        });
-
-      if (profileError) {
-        console.error('Error creating user profile:', profileError);
-      }
-
-      // If merchant, create shop
-      if (role === 'merchant' && shopData) {
-        const { error: shopError } = await supabase
-          .from('shops')
-          .insert({
-            ...shopData,
-            owner_id: result.data.user.id
-          });
-
-        if (shopError) {
-          console.error('Error creating shop:', shopError);
-        }
-      }
-    }
-
-    return result;
+    setUser(newUser);
+    localStorage.setItem('localpick_user', JSON.stringify(newUser));
+    
+    return { data: { user: newUser }, error: null };
   };
 
   const signOut = async () => {
-    await supabase.auth.signOut();
+    setUser(null);
+    localStorage.removeItem('localpick_user');
   };
 
   const hasRole = (role: UserRole): boolean => {
