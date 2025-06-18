@@ -45,6 +45,14 @@ const ProductDetail = () => {
     setShop(foundShop);
   }, [id, navigate]);
 
+  useEffect(() => {
+    // Auto-fill email and name if user is logged in
+    if (user) {
+      setCustomerEmail(user.email);
+      setCustomerName(user.name || user.email.split('@')[0]);
+    }
+  }, [user]);
+
   const handleReservation = (e: React.FormEvent) => {
     e.preventDefault();
     if (!product || !shop || !customerName.trim()) return;
@@ -84,6 +92,12 @@ const ProductDetail = () => {
         variant: "destructive"
       });
     }
+  };
+
+  const openGoogleMaps = (location: string) => {
+    const encodedLocation = encodeURIComponent(location);
+    const googleMapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodedLocation}`;
+    window.open(googleMapsUrl, '_blank');
   };
 
   if (!product || !shop) {
@@ -156,7 +170,13 @@ const ProductDetail = () => {
                       <h5 className="font-medium text-lg">{shop.name}</h5>
                       <div className="flex items-center text-gray-600 mt-1">
                         <MapPin className="w-4 h-4 mr-1" />
-                        <span>{shop.location}</span>
+                        <button 
+                          onClick={() => openGoogleMaps(shop.location)}
+                          className="text-blue-600 hover:text-blue-800 hover:underline cursor-pointer flex items-center gap-1"
+                        >
+                          {shop.location}
+                          <ExternalLink className="w-3 h-3" />
+                        </button>
                       </div>
                       <div className="flex items-center text-gray-600 mt-1">
                         <Clock className="w-4 h-4 mr-1" />
@@ -174,6 +194,21 @@ const ProductDetail = () => {
                         <ShoppingBag className="w-4 h-4 mr-2" />
                         Out of Stock
                       </Button>
+                    ) : !isAuthenticated ? (
+                      <div className="space-y-3">
+                        <Alert>
+                          <LogIn className="h-4 w-4" />
+                          <AlertDescription>
+                            Please log in to reserve this product for pickup.
+                          </AlertDescription>
+                        </Alert>
+                        <Link to="/login">
+                          <Button className="w-full" size="lg">
+                            <LogIn className="w-4 h-4 mr-2" />
+                            Sign In to Reserve
+                          </Button>
+                        </Link>
+                      </div>
                     ) : (
                       <Dialog open={isReserveDialogOpen} onOpenChange={setIsReserveDialogOpen}>
                         <DialogTrigger asChild>

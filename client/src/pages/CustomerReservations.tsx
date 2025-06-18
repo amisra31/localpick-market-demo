@@ -4,7 +4,9 @@ import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, Clock, MapPin, ShoppingBag } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
+import { toast } from "@/hooks/use-toast";
+import { ArrowLeft, Clock, MapPin, ShoppingBag, CheckCircle, XCircle } from "lucide-react";
 
 interface CustomerReservation {
   id: string;
@@ -18,11 +20,14 @@ interface CustomerReservation {
 }
 
 const CustomerReservations = () => {
+  const { user, isAuthenticated } = useAuth();
   const [reservations, setReservations] = useState<CustomerReservation[]>([]);
 
   useEffect(() => {
-    loadReservations();
-  }, []);
+    if (isAuthenticated) {
+      loadReservations();
+    }
+  }, [isAuthenticated]);
 
   const loadReservations = () => {
     const savedReservations = JSON.parse(localStorage.getItem('localpick_customer_reservations') || '[]');
@@ -44,10 +49,34 @@ const CustomerReservations = () => {
     return `${diffInDays} day${diffInDays > 1 ? 's' : ''} ago`;
   };
 
+  const cancelReservation = (reservationId: string) => {
+    const updatedReservations = reservations.filter(r => r.id !== reservationId);
+    setReservations(updatedReservations);
+    localStorage.setItem('localpick_customer_reservations', JSON.stringify(updatedReservations));
+    toast({
+      title: "Reservation cancelled",
+      description: "Your reservation has been cancelled successfully."
+    });
+  };
+
+  const markAsPickedUp = (reservationId: string) => {
+    const updatedReservations = reservations.filter(r => r.id !== reservationId);
+    setReservations(updatedReservations);
+    localStorage.setItem('localpick_customer_reservations', JSON.stringify(updatedReservations));
+    toast({
+      title: "Order completed",
+      description: "Thank you for your purchase! Order marked as picked up."
+    });
+  };
+
   const clearReservations = () => {
     if (confirm('Are you sure you want to clear all reservations? This action cannot be undone.')) {
       localStorage.removeItem('localpick_customer_reservations');
       setReservations([]);
+      toast({
+        title: "All reservations cleared",
+        description: "Your reservation history has been cleared."
+      });
     }
   };
 
