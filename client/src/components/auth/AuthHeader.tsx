@@ -40,11 +40,18 @@ export const AuthHeader = () => {
   if (user) {
     return (
       <div className="flex items-center space-x-4">
-        <div className="flex items-center space-x-2 text-sm text-gray-600">
-          {getRoleIcon()}
-          <span>{getRoleName()}</span>
-          <span className="text-gray-400">•</span>
-          <span>{user.email}</span>
+        <div className="flex items-center space-x-3 bg-gradient-to-r from-blue-50 to-indigo-50 px-4 py-2 rounded-lg border border-blue-200">
+          <div className="flex items-center space-x-2">
+            {getRoleIcon()}
+            <div className="flex flex-col">
+              <span className="text-sm font-medium text-gray-900">
+                {user.name || user.email.split('@')[0]}
+              </span>
+              <span className="text-xs text-gray-600">
+                {getRoleName()} • {user.email}
+              </span>
+            </div>
+          </div>
         </div>
         <Button variant="outline" onClick={handleSignOut} className="gap-2">
           <LogOut className="w-4 h-4" />

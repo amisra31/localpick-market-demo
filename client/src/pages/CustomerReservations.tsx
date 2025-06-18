@@ -166,18 +166,37 @@ const CustomerReservations = () => {
                         </p>
                       </div>
 
-                      <div className="flex space-x-3">
-                        <Link to={`/product/${reservation.productId}`} className="flex-1">
-                          <Button variant="outline" className="w-full">
-                            View Product Details
+                      <div className="flex flex-col space-y-3">
+                        <div className="flex space-x-3">
+                          <Button 
+                            onClick={() => markAsPickedUp(reservation.id)}
+                            className="flex-1 bg-green-600 hover:bg-green-700"
+                          >
+                            <CheckCircle className="w-4 h-4 mr-2" />
+                            Mark as Picked Up
                           </Button>
-                        </Link>
-                        <Link to="/browse" className="flex-1">
-                          <Button className="w-full">
-                            <ShoppingBag className="w-4 h-4 mr-2" />
-                            Continue Shopping
+                          <Button 
+                            onClick={() => cancelReservation(reservation.id)}
+                            variant="destructive" 
+                            className="flex-1"
+                          >
+                            <XCircle className="w-4 h-4 mr-2" />
+                            Cancel Reservation
                           </Button>
-                        </Link>
+                        </div>
+                        <div className="flex space-x-3">
+                          <Link to={`/product/${reservation.productId}`} className="flex-1">
+                            <Button variant="outline" className="w-full">
+                              View Product Details
+                            </Button>
+                          </Link>
+                          <Link to="/browse" className="flex-1">
+                            <Button className="w-full">
+                              <ShoppingBag className="w-4 h-4 mr-2" />
+                              Continue Shopping
+                            </Button>
+                          </Link>
+                        </div>
                       </div>
                     </div>
                   </CardContent>

@@ -103,6 +103,17 @@ LocalPick is a full-stack web application that serves as a marketplace platform 
 ```
 Changelog:
 - June 18, 2025. Initial setup
+- June 18, 2025. Enhanced UX and authentication system:
+  * Implemented conditional "My Reservations" button visibility for logged-in users
+  * Removed Business Access section from homepage for cleaner UX
+  * Added role-based routing guards for Merchant and Admin dashboards
+  * Implemented login-required reservations with auto-filled user data
+  * Made shop locations clickable to open Google Maps
+  * Added cancel/pickup functionality for reservations with automatic count updates
+  * Enhanced user session persistence across page refreshes
+  * Added user banner with name, role, and logout functionality
+  * Implemented comprehensive database schema for users, shops, products, and reservations
+  * Updated storage layer to support full CRUD operations for all entities
 ```
 
 ## User Preferences

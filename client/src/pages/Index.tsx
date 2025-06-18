@@ -260,7 +260,16 @@ const Index = () => {
                     </div>
                     <div className="flex items-center gap-2">
                       <MapPin className="w-4 h-4 text-orange-500" />
-                      <span>📍 {product.shop.location}</span>
+                      <button 
+                        onClick={() => {
+                          const encodedLocation = encodeURIComponent(product.shop.location);
+                          const googleMapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodedLocation}`;
+                          window.open(googleMapsUrl, '_blank');
+                        }}
+                        className="text-blue-600 hover:text-blue-800 hover:underline cursor-pointer"
+                      >
+                        📍 {product.shop.location}
+                      </button>
                     </div>
                     <div className="flex items-center gap-2">
                       <Clock className="w-4 h-4" />
