@@ -6,11 +6,13 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { AuthHeader } from "@/components/auth/AuthHeader";
+import { useAuth } from "@/contexts/AuthContext";
 import { mockDataService } from "@/services/mockData";
 import { ProductWithShop } from "@/types";
 import { Search, MapPin, Clock, ShoppingBag, Eye, Store, Settings, BarChart3 } from "lucide-react";
 
 const Index = () => {
+  const { user, isAuthenticated } = useAuth();
   const [products, setProducts] = useState<ProductWithShop[]>([]);
   const [filteredProducts, setFilteredProducts] = useState<ProductWithShop[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
@@ -101,12 +103,14 @@ const Index = () => {
               </div>
             </div>
             <div className="flex items-center space-x-4">
-              <Link to="/my-reservations">
-                <Button variant="outline" className="gap-2 hover:bg-blue-50 transition-colors">
-                  <ShoppingBag className="w-4 h-4" />
-                  My Reservations ({getReservationCount()})
-                </Button>
-              </Link>
+              {isAuthenticated && (
+                <Link to="/my-reservations">
+                  <Button variant="outline" className="gap-2 hover:bg-blue-50 transition-colors">
+                    <ShoppingBag className="w-4 h-4" />
+                    My Reservations ({getReservationCount()})
+                  </Button>
+                </Link>
+              )}
               <AuthHeader />
             </div>
           </div>
@@ -296,57 +300,7 @@ const Index = () => {
         )}
       </div>
 
-      {/* Business Access Section */}
-      <div className="bg-white border-t border-gray-200 mt-16">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-          <div className="text-center mb-8">
-            <h3 className="text-2xl font-semibold text-gray-900 mb-2">Business Access</h3>
-            <p className="text-gray-600">Manage your shop or access administrative tools</p>
-          </div>
-          
-          <div className="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto">
-            <Card className="group hover:shadow-xl transition-all duration-300 border-2 border-emerald-200 hover:border-emerald-300 bg-gradient-to-br from-emerald-50 to-teal-50">
-              <CardHeader className="text-center pb-4">
-                <div className="w-16 h-16 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-2xl flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform duration-200">
-                  <Settings className="w-8 h-8 text-white" />
-                </div>
-                <CardTitle className="text-xl text-gray-900">Shop Owners</CardTitle>
-                <CardDescription className="text-gray-600">
-                  Manage your shop profile, add products, and track inventory
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="text-center">
-                <Link to="/manage-shop">
-                  <Button className="w-full h-12 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white text-lg font-semibold shadow-lg group-hover:shadow-xl transition-all duration-200">
-                    <Store className="w-5 h-5 mr-2" />
-                    Manage Your Shop
-                  </Button>
-                </Link>
-              </CardContent>
-            </Card>
 
-            <Card className="group hover:shadow-xl transition-all duration-300 border-2 border-blue-200 hover:border-blue-300 bg-gradient-to-br from-blue-50 to-indigo-50">
-              <CardHeader className="text-center pb-4">
-                <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-2xl flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform duration-200">
-                  <BarChart3 className="w-8 h-8 text-white" />
-                </div>
-                <CardTitle className="text-xl text-gray-900">Administrators</CardTitle>
-                <CardDescription className="text-gray-600">
-                  Monitor marketplace activity, shops, and customer reservations
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="text-center">
-                <Link to="/admin-dashboard">
-                  <Button className="w-full h-12 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white text-lg font-semibold shadow-lg group-hover:shadow-xl transition-all duration-200">
-                    <BarChart3 className="w-5 h-5 mr-2" />
-                    Admin Dashboard
-                  </Button>
-                </Link>
-              </CardContent>
-            </Card>
-          </div>
-        </div>
-      </div>
 
       {/* Footer */}
       <footer className="bg-gray-900 text-white">

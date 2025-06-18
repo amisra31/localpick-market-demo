@@ -115,13 +115,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const value = {
     user,
-    session,
     loading,
     signIn,
     signUp,
     signOut,
     hasRole,
-    canAccessRoute
+    canAccessRoute,
+    isAuthenticated: !!user
   };
 
   return (

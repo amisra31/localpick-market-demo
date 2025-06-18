@@ -6,14 +6,17 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { useAuth } from "@/contexts/AuthContext";
 import { mockDataService } from "@/services/mockData";
 import { Product, Shop } from "@/types";
 import { toast } from "@/hooks/use-toast";
-import { ArrowLeft, MapPin, Clock, ShoppingBag } from "lucide-react";
+import { ArrowLeft, MapPin, Clock, ShoppingBag, ExternalLink, LogIn } from "lucide-react";
 
 const ProductDetail = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const { user, isAuthenticated } = useAuth();
   const [product, setProduct] = useState<Product | null>(null);
   const [shop, setShop] = useState<Shop | null>(null);
   const [isReserveDialogOpen, setIsReserveDialogOpen] = useState(false);
