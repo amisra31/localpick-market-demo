@@ -88,7 +88,7 @@ const ShopOwnerDashboard = () => {
         // Create new shop
         const newShop = mockDataService.createShop({
           ...shopForm,
-          ownerId: currentOwner.id
+          ownerId: user.id
         });
         setShop(newShop);
         loadProducts(newShop.id);
@@ -177,7 +177,7 @@ const ShopOwnerDashboard = () => {
     }
   };
 
-  if (!currentOwner) {
+  if (!user || user.role !== 'merchant') {
     return <div>Loading...</div>;
   }
 
@@ -192,7 +192,7 @@ const ShopOwnerDashboard = () => {
               </Link>
               <div>
                 <h1 className="text-2xl font-bold">Shop Owner Dashboard</h1>
-                <p className="text-gray-600">Welcome, {currentOwner.name}</p>
+                <p className="text-gray-600">Welcome, {user.name || user.email}</p>
               </div>
             </div>
             <Button onClick={handleLogout} variant="outline">
