@@ -9,8 +9,7 @@ import { ProtectedRoute } from "./components/auth/ProtectedRoute";
 import Index from "./pages/Index";
 import ManageShop from "./pages/ManageShop";
 import ShopOwnerLogin from "./pages/ShopOwnerLogin";
-import ShopOwnerDashboard from "./pages/ShopOwnerDashboard";
-import CustomerBrowse from "./pages/CustomerBrowse";
+import NewShopOwnerDashboard from "./pages/NewShopOwnerDashboard";
 import CustomerReservations from "./pages/CustomerReservations";
 import AdminDashboard from "./pages/AdminDashboard";
 import AdminPortal from "./pages/AdminPortal";
@@ -19,6 +18,7 @@ import NotFound from "./pages/NotFound";
 import Login from "./pages/auth/Login";
 import Register from "./pages/auth/Register";
 import ForgotPassword from "./pages/auth/ForgotPassword";
+import AuthCallback from "./pages/auth/AuthCallback";
 
 const queryClient = new QueryClient();
 
@@ -34,7 +34,7 @@ const App = () => (
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
             <Route path="/forgot-password" element={<ForgotPassword />} />
-            <Route path="/browse" element={<CustomerBrowse />} />
+            <Route path="/auth/callback" element={<AuthCallback />} />
             <Route path="/product/:id" element={<ProductDetail />} />
             
             {/* Protected User Routes */}
@@ -53,7 +53,7 @@ const App = () => (
             <Route path="/shop-owner-login" element={<ShopOwnerLogin />} />
             <Route path="/shop-owner-dashboard" element={
               <ProtectedRoute requiredRole="merchant">
-                <ShopOwnerDashboard />
+                <NewShopOwnerDashboard />
               </ProtectedRoute>
             } />
             

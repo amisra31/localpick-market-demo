@@ -7,7 +7,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuth } from "@/contexts/AuthContext";
-import { mockDataService } from "@/services/mockData";
+import { dataService } from "@/services/dataService";
 import { Shop, Product, Reservation, ReservationWithDetails } from "@/types";
 import { ArrowLeft, Store, Package, ShoppingBag, AlertTriangle, Shield, BarChart3, LogOut } from "lucide-react";
 

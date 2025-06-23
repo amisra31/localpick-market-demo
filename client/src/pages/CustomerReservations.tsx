@@ -5,18 +5,24 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/contexts/AuthContext";
-import { toast } from "@/hooks/use-toast";
-import { ArrowLeft, Clock, MapPin, ShoppingBag, CheckCircle, XCircle } from "lucide-react";
+import { enhancedDataService } from "@/services/enhancedDataService";
+import { ArrowLeft, Clock, MapPin, ShoppingBag, Store } from "lucide-react";
+import { SignOutButton } from "@/components/SignOutButton";
+import { AuthHeader } from "@/components/auth/AuthHeader";
 
 interface CustomerReservation {
   id: string;
   productId: string;
   shopId: string;
+  customerId: string;
   customerName: string;
   email?: string;
-  timestamp: string;
+  status: 'pending' | 'approved' | 'ready' | 'completed';
+  createdAt: string;
   productName: string;
   shopName: string;
+  productPrice: number;
+  productImage?: string;
 }
 
 const CustomerReservations = () => {
@@ -24,14 +30,37 @@ const CustomerReservations = () => {
   const [reservations, setReservations] = useState<CustomerReservation[]>([]);
 
   useEffect(() => {
-    if (isAuthenticated) {
+    if (isAuthenticated && user) {
       loadReservations();
+      // Set up polling for live updates
+      const interval = setInterval(loadReservations, 10000); // Poll every 10 seconds
+      return () => clearInterval(interval);
     }
-  }, [isAuthenticated]);
+  }, [isAuthenticated, user]);
 
-  const loadReservations = () => {
-    const savedReservations = JSON.parse(localStorage.getItem('localpick_customer_reservations') || '[]');
-    setReservations(savedReservations);
+  const loadReservations = async () => {
+    if (!user) return;
+    
+    try {
+      // Load from database instead of localStorage
+      const dbReservations = await enhancedDataService.getReservationsByCustomer(user.id);
+      
+      // Also check localStorage for backward compatibility
+      const localReservations = JSON.parse(localStorage.getItem('localpick_customer_reservations') || '[]');
+      
+      // Combine and deduplicate
+      const allReservations = [...dbReservations, ...localReservations];
+      const uniqueReservations = allReservations.filter((reservation, index, self) => 
+        index === self.findIndex(r => r.id === reservation.id)
+      );
+      
+      setReservations(uniqueReservations);
+    } catch (error) {
+      console.error('Failed to load reservations:', error);
+      // Fallback to localStorage
+      const savedReservations = JSON.parse(localStorage.getItem('localpick_customer_reservations') || '[]');
+      setReservations(savedReservations);
+    }
   };
 
   const getTimeAgo = (timestamp: string) => {
@@ -49,179 +78,168 @@ const CustomerReservations = () => {
     return `${diffInDays} day${diffInDays > 1 ? 's' : ''} ago`;
   };
 
-  const cancelReservation = (reservationId: string) => {
-    const updatedReservations = reservations.filter(r => r.id !== reservationId);
-    setReservations(updatedReservations);
-    localStorage.setItem('localpick_customer_reservations', JSON.stringify(updatedReservations));
-    toast({
-      title: "Reservation cancelled",
-      description: "Your reservation has been cancelled successfully."
-    });
-  };
-
-  const markAsPickedUp = (reservationId: string) => {
-    const updatedReservations = reservations.filter(r => r.id !== reservationId);
-    setReservations(updatedReservations);
-    localStorage.setItem('localpick_customer_reservations', JSON.stringify(updatedReservations));
-    toast({
-      title: "Order completed",
-      description: "Thank you for your purchase! Order marked as picked up."
-    });
-  };
-
-  const clearReservations = () => {
-    if (confirm('Are you sure you want to clear all reservations? This action cannot be undone.')) {
-      localStorage.removeItem('localpick_customer_reservations');
-      setReservations([]);
-      toast({
-        title: "All reservations cleared",
-        description: "Your reservation history has been cleared."
-      });
+  const getStatusDisplay = (status: string) => {
+    switch (status) {
+      case 'pending':
+        return { text: 'Pending Approval', variant: 'secondary' as const, color: 'bg-yellow-100 text-yellow-800 border-yellow-200' };
+      case 'approved':
+      case 'ready':
+        return { text: 'Approved – Ready for Pickup', variant: 'default' as const, color: 'bg-green-100 text-green-800 border-green-200' };
+      case 'completed':
+        return { text: 'Completed', variant: 'outline' as const, color: 'bg-gray-100 text-gray-600 border-gray-200' };
+      default:
+        return { text: 'Pending Approval', variant: 'secondary' as const, color: 'bg-yellow-100 text-yellow-800 border-yellow-200' };
     }
   };
 
+  const getReservationCount = () => {
+    const savedReservations = JSON.parse(localStorage.getItem('localpick_customer_reservations') || '[]');
+    return savedReservations.length;
+  };
+
+  // Removed customer-side reservation management functions
+  // All reservation status changes are now handled by merchants
+
   return (
     <div className="min-h-screen bg-gray-50">
-      <div className="bg-white shadow-sm border-b">
-        <div className="container mx-auto px-4 py-4">
+      {/* Consistent Header */}
+      <header className="bg-white/95 backdrop-blur-md border-b border-gray-200/50 sticky top-0 z-50 shadow-sm">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-4">
-              <Link to="/browse" className="text-gray-600 hover:text-gray-900">
-                <ArrowLeft className="w-5 h-5" />
+            {/* Logo */}
+            <div className="flex items-center space-x-2">
+              <Link to="/" className="flex items-center space-x-2">
+                <div className="w-8 h-8 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-lg flex items-center justify-center">
+                  <ArrowLeft className="w-5 h-5 text-white" />
+                </div>
+                <h1 className="text-xl font-bold bg-gradient-to-r from-gray-900 to-gray-600 bg-clip-text text-transparent">
+                  LocalPick Market
+                </h1>
               </Link>
-              <div>
-                <h1 className="text-2xl font-bold">My Reservations</h1>
-                <p className="text-gray-600">View your reserved items</p>
-              </div>
             </div>
-            {reservations.length > 0 && (
-              <Button variant="outline" onClick={clearReservations}>
-                Clear All
-              </Button>
-            )}
+
+            {/* Center - Page Title */}
+            <div className="hidden md:block">
+              <h2 className="text-lg font-semibold text-gray-800">My Reservations</h2>
+            </div>
+
+            {/* Right Side */}
+            <div className="flex items-center space-x-3">
+              {isAuthenticated && (
+                <Link to="/my-reservations">
+                  <Button variant="outline" size="default" className="gap-2 hover:bg-blue-50 transition-colors">
+                    <ShoppingBag className="w-4 h-4" />
+                    <span className="hidden sm:inline">My Reservations ({getReservationCount()})</span>
+                    <span className="sm:hidden">({getReservationCount()})</span>
+                  </Button>
+                </Link>
+              )}
+              <AuthHeader />
+            </div>
           </div>
         </div>
-      </div>
+      </header>
 
-      <div className="container mx-auto px-4 py-8">
+      <div className="container mx-auto px-4 py-8 max-w-4xl">
         {reservations.length > 0 ? (
-          <div className="space-y-6">
-            <div className="text-center">
-              <p className="text-gray-600">
-                You have {reservations.length} reservation{reservations.length > 1 ? 's' : ''} waiting for pickup
+          <div className="space-y-4">
+            {/* Header Stats */}
+            <div className="mb-6">
+              <p className="text-gray-600 text-sm">
+                {reservations.length} reservation{reservations.length > 1 ? 's' : ''}
               </p>
             </div>
 
-            <div className="grid gap-6">
-              {reservations.map((reservation) => (
-                <Card key={reservation.id} className="hover:shadow-md transition-shadow">
-                  <CardHeader>
-                    <div className="flex items-start justify-between">
-                      <div>
-                        <CardTitle className="text-xl">{reservation.productName}</CardTitle>
-                        <CardDescription className="text-base mt-1">
-                          Reserved by {reservation.customerName}
-                        </CardDescription>
-                      </div>
-                      <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
-                        Reserved
-                      </Badge>
-                    </div>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-4">
-                      <div className="grid md:grid-cols-2 gap-4">
-                        <div>
-                          <h6 className="font-medium text-sm text-gray-700 mb-2">Pickup Location</h6>
-                          <div className="bg-gray-50 p-3 rounded-lg">
-                            <div className="flex items-center text-gray-800 font-medium">
-                              <MapPin className="w-4 h-4 mr-2" />
-                              {reservation.shopName}
+            {/* Reservation List - Amazon Style */}
+            <div className="space-y-3">
+              {reservations.map((reservation) => {
+                const statusInfo = getStatusDisplay(reservation.status || 'pending');
+                return (
+                  <Link 
+                    key={reservation.id} 
+                    to={`/product/${reservation.productId}`}
+                    className="block"
+                  >
+                    <Card className="hover:shadow-md transition-all duration-200 border border-gray-200 hover:border-gray-300 cursor-pointer">
+                      <CardContent className="p-4">
+                        <div className="flex gap-4">
+                          {/* Product Image */}
+                          <div className="w-20 h-20 bg-gray-100 rounded-lg flex-shrink-0 overflow-hidden">
+                            <img 
+                              src={reservation.productImage || 'https://images.unsplash.com/photo-1560472354-b33ff0c44a43?w=80&h=80&fit=crop&crop=center'} 
+                              alt={reservation.productName}
+                              className="w-full h-full object-cover"
+                              onError={(e) => {
+                                e.currentTarget.src = 'https://images.unsplash.com/photo-1560472354-b33ff0c44a43?w=80&h=80&fit=crop&crop=center';
+                              }}
+                            />
+                          </div>
+                          
+                          {/* Product Info */}
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-start justify-between">
+                              <div className="flex-1">
+                                <h3 className="font-medium text-gray-900 text-lg leading-tight mb-1">
+                                  {reservation.productName}
+                                </h3>
+                                <div className="flex items-center gap-2 text-sm text-gray-600 mb-2">
+                                  <Store className="w-4 h-4" />
+                                  <span>{reservation.shopName}</span>
+                                </div>
+                                <div className="text-lg font-semibold text-gray-900 mb-2">
+                                  ${reservation.productPrice || '0.00'}
+                                </div>
+                                <div className="flex items-center gap-2 text-sm text-gray-500">
+                                  <Clock className="w-3 h-3" />
+                                  <span>Reserved {getTimeAgo(reservation.createdAt || reservation.timestamp)}</span>
+                                </div>
+                              </div>
+                              
+                              {/* Status Badge */}
+                              <div className="flex-shrink-0 ml-4">
+                                <Badge 
+                                  variant={statusInfo.variant}
+                                  className={`${statusInfo.color} font-medium`}
+                                >
+                                  {statusInfo.text}
+                                </Badge>
+                              </div>
                             </div>
                           </div>
                         </div>
-                        <div>
-                          <h6 className="font-medium text-sm text-gray-700 mb-2">Reservation Time</h6>
-                          <div className="bg-gray-50 p-3 rounded-lg">
-                            <div className="flex items-center text-gray-800">
-                              <Clock className="w-4 h-4 mr-2" />
-                              {getTimeAgo(reservation.timestamp)}
-                            </div>
-                          </div>
-                        </div>
-                      </div>
+                      </CardContent>
+                    </Card>
+                  </Link>
+                );
+              })}
+            </div>
 
-                      {reservation.email && (
-                        <div>
-                          <h6 className="font-medium text-sm text-gray-700 mb-1">Contact Email</h6>
-                          <p className="text-gray-600">{reservation.email}</p>
-                        </div>
-                      )}
-
-                      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                        <h6 className="font-medium text-blue-800 mb-1">Ready for Pickup</h6>
-                        <p className="text-blue-700 text-sm">
-                          Visit {reservation.shopName} to collect your reserved item. 
-                          Please bring this confirmation and a valid ID.
-                        </p>
-                      </div>
-
-                      <div className="flex flex-col space-y-3">
-                        <div className="flex space-x-3">
-                          <Button 
-                            onClick={() => markAsPickedUp(reservation.id)}
-                            className="flex-1 bg-green-600 hover:bg-green-700"
-                          >
-                            <CheckCircle className="w-4 h-4 mr-2" />
-                            Mark as Picked Up
-                          </Button>
-                          <Button 
-                            onClick={() => cancelReservation(reservation.id)}
-                            variant="destructive" 
-                            className="flex-1"
-                          >
-                            <XCircle className="w-4 h-4 mr-2" />
-                            Cancel Reservation
-                          </Button>
-                        </div>
-                        <div className="flex space-x-3">
-                          <Link to={`/product/${reservation.productId}`} className="flex-1">
-                            <Button variant="outline" className="w-full">
-                              View Product Details
-                            </Button>
-                          </Link>
-                          <Link to="/browse" className="flex-1">
-                            <Button className="w-full">
-                              <ShoppingBag className="w-4 h-4 mr-2" />
-                              Continue Shopping
-                            </Button>
-                          </Link>
-                        </div>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
+            {/* Continue Shopping */}
+            <div className="pt-6 border-t">
+              <Link to="/">
+                <Button variant="outline" className="gap-2">
+                  <ShoppingBag className="w-4 h-4" />
+                  Continue Shopping
+                </Button>
+              </Link>
             </div>
           </div>
         ) : (
-          <Card>
-            <CardContent className="text-center py-12">
-              <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <ShoppingBag className="w-8 h-8 text-gray-400" />
-              </div>
-              <h3 className="text-xl font-semibold mb-2">No Reservations Yet</h3>
-              <p className="text-gray-600 mb-6">
-                You haven't made any reservations. Start browsing products to make your first reservation!
-              </p>
-              <Link to="/browse">
-                <Button>
-                  <ShoppingBag className="w-4 h-4 mr-2" />
-                  Browse Products
-                </Button>
-              </Link>
-            </CardContent>
-          </Card>
+          <div className="text-center py-16">
+            <div className="w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-6">
+              <ShoppingBag className="w-12 h-12 text-gray-400" />
+            </div>
+            <h3 className="text-xl font-semibold text-gray-900 mb-2">No reservations yet</h3>
+            <p className="text-gray-600 mb-8 max-w-md mx-auto">
+              When you reserve products, they'll appear here. Start browsing to make your first reservation.
+            </p>
+            <Link to="/">
+              <Button size="lg" className="gap-2">
+                <ShoppingBag className="w-4 h-4" />
+                Browse Products
+              </Button>
+            </Link>
+          </div>
         )}
       </div>
     </div>

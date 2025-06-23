@@ -1,5 +1,5 @@
-import { useState, useEffect } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { useState, useEffect, useRef } from "react";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -7,18 +7,27 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { AuthHeader } from "@/components/auth/AuthHeader";
 import { useAuth } from "@/contexts/AuthContext";
-import { mockDataService } from "@/services/mockData";
-import { ProductWithShop } from "@/types";
-import { Search, MapPin, Clock, ShoppingBag, Eye, Store, Settings, BarChart3 } from "lucide-react";
+import { enhancedDataService } from "@/services/enhancedDataService";
+import { useProductSync, useShopSync } from "@/hooks/useRealTimeSync";
+import { ProductWithShop, Shop } from "@/types";
+import { Search, MapPin, Clock, ShoppingBag, Eye, Store, Settings, BarChart3, Navigation, Coffee, Gift, Smartphone, Baby, Dumbbell, Plus, ChevronLeft, ChevronRight } from "lucide-react";
+import { ProductCard } from "@/components/ProductCard";
+import { SimpleLocationAutocomplete } from "@/components/SimpleLocationAutocomplete";
 
 const Index = () => {
   const { user, isAuthenticated } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const [products, setProducts] = useState<ProductWithShop[]>([]);
   const [filteredProducts, setFilteredProducts] = useState<ProductWithShop[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("all");
-  const [shopFilter, setShopFilter] = useState("all");
+  const [isLoading, setIsLoading] = useState(false);
+  const [componentKey, setComponentKey] = useState(Date.now());
+  const [isNavigationReload, setIsNavigationReload] = useState(false);
+  const [nearbyShops, setNearbyShops] = useState<Shop[]>([]);
+  const [userLocation, setUserLocation] = useState<string>('Mariposa, CA');
+  const [locationCoordinates, setLocationCoordinates] = useState<{lat: number, lng: number} | null>(null);
 
   // Redirect users to their appropriate dashboards based on role
   useEffect(() => {
@@ -36,35 +45,79 @@ const Index = () => {
   }, [isAuthenticated, user, navigate]);
 
   useEffect(() => {
-    // Clear any cached data to ensure fresh American data loads
+    console.log('🚀 Component mounted - initial useEffect');
+    // Clear any cached data to ensure fresh data loads
     localStorage.removeItem('localpick_shops');
     localStorage.removeItem('localpick_products');
+    
+    // Load saved location from localStorage
+    const savedLocation = localStorage.getItem('userLocation');
+    if (savedLocation) {
+      setUserLocation(savedLocation);
+    }
+    
+    // Reset state to ensure clean start
+    setProducts([]);
+    setFilteredProducts([]);
+    setSearchQuery("");
+    setCategoryFilter("all");
+    
     loadProducts();
+    loadNearbyShops();
   }, []);
 
   useEffect(() => {
-    filterProducts();
-  }, [products, searchQuery, categoryFilter, shopFilter]);
+    if (!isNavigationReload) {
+      filterProducts();
+    }
+  }, [products, searchQuery, categoryFilter, isNavigationReload]);
 
-  const loadProducts = () => {
-    const allProducts = mockDataService.getProducts();
-    const allShops = mockDataService.getShops();
+  const loadProducts = async () => {
+    if (isLoading) {
+      console.log('Already loading products, skipping...');
+      return;
+    }
     
-    console.log('Loaded products:', allProducts);
-    console.log('Loaded shops:', allShops);
-    
-    const productsWithShop: ProductWithShop[] = allProducts.map(product => {
-      const shop = allShops.find(s => s.id === product.shopId);
-      return {
-        ...product,
-        shop: shop!
-      };
-    });
+    setIsLoading(true);
+    try {
+      console.log('🔄 loadProducts() called');
+      const allProducts = await enhancedDataService.getProducts();
+      const allShops = await enhancedDataService.getShops();
+      
+      console.log('📡 Raw API response - products:', allProducts.length, allProducts.map(p => p.id));
+      console.log('📡 Raw API response - shops:', allShops.length);
+      
+      const productsWithShop: ProductWithShop[] = allProducts.map(product => {
+        const shop = allShops.find(s => s.id === product.shopId);
+        return {
+          ...product,
+          shop: shop!
+        };
+      });
 
-    setProducts(productsWithShop);
+      console.log('🔗 After adding shop info:', productsWithShop.length, productsWithShop.map(p => p.id));
+
+      // Remove any potential duplicates by product ID
+      const uniqueProducts = productsWithShop.filter((product, index, self) => 
+        index === self.findIndex(p => p.id === product.id)
+      );
+
+      console.log('✅ After deduplication:', uniqueProducts.length, uniqueProducts.map(p => p.id));
+      if (allProducts.length !== uniqueProducts.length) {
+        console.warn('❌ Duplicates found and removed!');
+      }
+
+      console.log('📦 Setting products state with:', uniqueProducts.length, 'products');
+      setProducts(uniqueProducts);
+    } catch (error) {
+      console.error('Failed to load products:', error);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const filterProducts = () => {
+    console.log('🔍 filterProducts() called with products:', products.length, products.map(p => p.id));
     let filtered = [...products];
 
     if (searchQuery) {
@@ -79,51 +132,152 @@ const Index = () => {
       filtered = filtered.filter(product => product.shop.category === categoryFilter);
     }
 
-    if (shopFilter !== "all") {
-      filtered = filtered.filter(product => product.shop.id === shopFilter);
-    }
 
-    setFilteredProducts(filtered);
+    // Ensure no duplicates in filtered results
+    const uniqueFiltered = filtered.filter((product, index, self) => 
+      index === self.findIndex(p => p.id === product.id)
+    );
+
+    console.log('🎯 Filtered:', filtered.length, filtered.map(p => p.id));
+    console.log('🎯 Unique filtered:', uniqueFiltered.length, uniqueFiltered.map(p => p.id));
+    
+    setFilteredProducts(uniqueFiltered);
   };
 
-  const getUniqueShops = () => {
-    const shops = new Map();
-    products.forEach(product => {
-      if (!shops.has(product.shop.id)) {
-        shops.set(product.shop.id, product.shop);
-      }
-    });
-    return Array.from(shops.values());
-  };
 
   const getReservationCount = () => {
     const reservations = JSON.parse(localStorage.getItem('localpick_customer_reservations') || '[]');
     return reservations.length;
   };
 
+
+  const handleLocationSelect = (location: string, coordinates?: { lat: number; lng: number }) => {
+    setUserLocation(location);
+    if (coordinates) {
+      setLocationCoordinates(coordinates);
+      console.log('📍 Location with coordinates:', location, coordinates);
+    }
+    localStorage.setItem('userLocation', location);
+    // Reload nearby shops when location changes
+    loadNearbyShops();
+  };
+
+  // Calculate distance between user location and shop (placeholder)
+  const calculateDistance = (userCoords: {lat: number, lng: number}, shop: any): string => {
+    // In a real app, you'd calculate actual distance using haversine formula
+    // For now, return mock distances
+    const distances = ['0.2 mi', '0.5 mi', '0.8 mi', '1.2 mi', '1.5 mi', '2.1 mi'];
+    return distances[Math.floor(Math.random() * distances.length)];
+  };
+
+
+
+
+
+
+
+
+
+  const loadNearbyShops = async () => {
+    try {
+      // Get all shops from database - no mock data
+      const allShops = await enhancedDataService.getShops();
+      console.log('📍 Loaded shops from database:', allShops.length);
+      
+      // Filter shops that have valid location data
+      const validShops = allShops.filter(shop => 
+        shop.location && 
+        shop.location.trim() !== '' && 
+        shop.name && 
+        shop.name.trim() !== ''
+      );
+      
+      console.log('✅ Valid shops with location data:', validShops.length);
+      
+      // For now, show up to 6 shops (in production, you'd calculate distance from user location)
+      const nearbyShopsList = validShops.slice(0, 6).map(shop => ({
+        ...shop,
+        // You can add distance calculation here if you have user coordinates
+        distance: locationCoordinates 
+          ? calculateDistance(locationCoordinates, shop) 
+          : '📍 Location-based distance coming soon'
+      }));
+      
+      setNearbyShops(nearbyShopsList);
+      console.log('🏪 Set nearby shops from database:', nearbyShopsList.length);
+      
+      if (nearbyShopsList.length === 0) {
+        console.log('⚠️ No shops found in database with valid location data');
+      }
+    } catch (error) {
+      console.error('Failed to load nearby shops:', error);
+      setNearbyShops([]); // Clear shops on error
+    }
+  };
+
+  const handleCategoryClick = (category: string) => {
+    if (category === 'Coffee' || category === 'Gift') {
+      setCategoryFilter(category === 'Coffee' ? 'Food' : 'Gifts');
+    }
+  };
+
+  const categories = [
+    { name: 'Coffee', icon: Coffee, enabled: true, filter: 'Food' },
+    { name: 'Gift', icon: Gift, enabled: true, filter: 'Gifts' },
+    { name: 'Electronics', icon: Smartphone, enabled: false },
+    { name: 'Kids', icon: Baby, enabled: false },
+    { name: 'Sports', icon: Dumbbell, enabled: false }
+  ];
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50">
-      {/* Header */}
-      <header className="bg-white/80 backdrop-blur-md border-b border-gray-200/50 sticky top-0 z-50">
+    <div key={componentKey} className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50">
+      {/* Compact Header */}
+      <header className="bg-white/95 backdrop-blur-md border-b border-gray-200/50 sticky top-0 z-50 shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-3">
-              <div className="w-10 h-10 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-xl flex items-center justify-center">
-                <Store className="w-6 h-6 text-white" />
+            {/* Logo */}
+            <div className="flex items-center space-x-2">
+              <div className="w-8 h-8 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-lg flex items-center justify-center">
+                <Store className="w-5 h-5 text-white" />
               </div>
-              <div>
-                <h1 className="text-2xl font-bold bg-gradient-to-r from-gray-900 to-gray-600 bg-clip-text text-transparent">
-                  LocalPick
-                </h1>
-                <p className="text-sm text-gray-500">Your neighborhood marketplace</p>
+              <h1 className="text-xl font-bold bg-gradient-to-r from-gray-900 to-gray-600 bg-clip-text text-transparent">
+                LocalPick Market
+              </h1>
+            </div>
+
+            {/* Centered Search Bar with Location */}
+            <div className="flex-1 flex justify-center">
+              <div className="flex items-center gap-3 max-w-2xl w-full">
+                {/* Search Input */}
+                <div className="relative flex-1">
+                  <Search className="w-4 h-4 absolute left-3 top-3 text-gray-400" />
+                  <Input
+                    placeholder="Search products, shops..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="pl-10 bg-white/90 border-gray-200 focus:border-blue-500 focus:ring-blue-500 h-10"
+                  />
+                </div>
+                
+                {/* Location Autocomplete Component */}
+                <SimpleLocationAutocomplete
+                  value={userLocation}
+                  onChange={setUserLocation}
+                  onLocationSelect={handleLocationSelect}
+                  placeholder="Enter location..."
+                  className="w-48"
+                />
               </div>
             </div>
-            <div className="flex items-center space-x-4">
+
+            {/* Right Side */}
+            <div className="flex items-center space-x-3">
               {isAuthenticated && (
                 <Link to="/my-reservations">
-                  <Button variant="outline" className="gap-2 hover:bg-blue-50 transition-colors">
+                  <Button variant="outline" size="default" className="gap-2 hover:bg-blue-50 transition-colors">
                     <ShoppingBag className="w-4 h-4" />
-                    My Reservations ({getReservationCount()})
+                    <span className="hidden sm:inline">My Reservations ({getReservationCount()})</span>
+                    <span className="sm:hidden">({getReservationCount()})</span>
                   </Button>
                 </Link>
               )}
@@ -133,209 +287,215 @@ const Index = () => {
         </div>
       </header>
 
-      {/* Hero Section */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Hero Section */}
-        <div className="text-center mb-12">
-          <h2 className="text-4xl sm:text-5xl font-bold text-gray-900 mb-4">
-            Discover Local Products
-          </h2>
-          <p className="text-xl text-gray-600 max-w-2xl mx-auto mb-8">
-            Browse, reserve, and pick up from your favorite neighborhood shops
-          </p>
+      {/* Categories Horizontal Scroll */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        <div className="flex items-center gap-4 overflow-x-auto pb-2" style={{scrollbarWidth: 'none', msOverflowStyle: 'none'}}>
+          <span className="text-sm font-medium text-gray-700 whitespace-nowrap">Categories:</span>
+          {categories.map((category) => {
+            const IconComponent = category.icon;
+            return (
+              <Button
+                key={category.name}
+                onClick={() => category.enabled ? handleCategoryClick(category.name) : undefined}
+                variant={categoryFilter === (category.filter || category.name.toLowerCase()) ? "default" : "outline"}
+                size="sm"
+                className={`flex items-center gap-2 whitespace-nowrap ${
+                  category.enabled 
+                    ? 'hover:bg-blue-50 cursor-pointer' 
+                    : 'opacity-50 cursor-not-allowed'
+                }`}
+                disabled={!category.enabled}
+              >
+                <IconComponent className="w-4 h-4" />
+                {category.name}
+              </Button>
+            );
+          })}
         </div>
+      </div>
 
-        {/* How It Works */}
-        <div className="mb-16">
-          <h3 className="text-2xl font-semibold text-center text-gray-900 mb-8">How It Works</h3>
-          <div className="grid md:grid-cols-3 gap-8">
-            <div className="text-center group">
-              <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform duration-200">
-                <Search className="w-8 h-8 text-white" />
-              </div>
-              <h4 className="text-lg font-semibold text-gray-900 mb-2">Browse Local Products</h4>
-              <p className="text-gray-600">Explore products from local shops in your neighborhood</p>
-            </div>
-            <div className="text-center group">
-              <div className="w-16 h-16 bg-gradient-to-br from-green-500 to-green-600 rounded-2xl flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform duration-200">
-                <ShoppingBag className="w-8 h-8 text-white" />
-              </div>
-              <h4 className="text-lg font-semibold text-gray-900 mb-2">Reserve for Pickup</h4>
-              <p className="text-gray-600">Reserve items you want and secure your purchase</p>
-            </div>
-            <div className="text-center group">
-              <div className="w-16 h-16 bg-gradient-to-br from-purple-500 to-purple-600 rounded-2xl flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform duration-200">
-                <MapPin className="w-8 h-8 text-white" />
-              </div>
-              <h4 className="text-lg font-semibold text-gray-900 mb-2">Visit Shop to Collect</h4>
-              <p className="text-gray-600">Pick up your reserved items at your convenience</p>
-            </div>
-          </div>
-        </div>
-
-        {/* Filters */}
-        <Card className="mb-8 shadow-lg border-0 bg-white/70 backdrop-blur-sm">
-          <CardHeader>
-            <CardTitle className="text-lg">Find Products</CardTitle>
-            <CardDescription>Search and filter to find exactly what you're looking for</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="grid md:grid-cols-3 gap-4">
-              <div>
-                <label className="text-sm font-medium mb-2 block text-gray-700">Search</label>
-                <div className="relative">
-                  <Search className="w-4 h-4 absolute left-3 top-3 text-gray-400" />
-                  <Input
-                    placeholder="Search products or shops..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    className="pl-10 bg-white border-gray-200 focus:border-blue-500 focus:ring-blue-500"
-                  />
+      {/* Main Content Area */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        <div className="flex gap-6">
+          {/* Left Panel - Nearby Shops */}
+          <div className="hidden lg:block w-80 flex-shrink-0">
+            <Card className="shadow-lg border-0 bg-white/70 backdrop-blur-sm sticky top-24">
+              <CardHeader className="pb-3">
+                <div className="flex items-center gap-2">
+                  <Store className="w-5 h-5 text-blue-600" />
+                  <CardTitle className="text-lg">Nearby Shops</CardTitle>
                 </div>
-              </div>
-              <div>
-                <label className="text-sm font-medium mb-2 block text-gray-700">Category</label>
-                <Select value={categoryFilter} onValueChange={setCategoryFilter}>
-                  <SelectTrigger className="bg-white border-gray-200">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Categories</SelectItem>
-                    <SelectItem value="Food">Food</SelectItem>
-                    <SelectItem value="Gifts">Gifts</SelectItem>
-                    <SelectItem value="Souvenirs">Souvenirs</SelectItem>
-                    <SelectItem value="Other">Other</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div>
-                <label className="text-sm font-medium mb-2 block text-gray-700">Shop</label>
-                <Select value={shopFilter} onValueChange={setShopFilter}>
-                  <SelectTrigger className="bg-white border-gray-200">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Shops</SelectItem>
-                    {getUniqueShops().map((shop) => (
-                      <SelectItem key={shop.id} value={shop.id}>
-                        {shop.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Products Grid */}
-        <div className="mb-6">
-          <p className="text-gray-600 text-lg">
-            {filteredProducts.length} product{filteredProducts.length !== 1 ? 's' : ''} available
-          </p>
-        </div>
-
-        {filteredProducts.length > 0 ? (
-          <div className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            {filteredProducts.map((product) => (
-              <Card key={product.id} className="group hover:shadow-xl transition-all duration-300 border-0 shadow-md bg-white/80 backdrop-blur-sm hover:bg-white hover:-translate-y-1">
-                <CardHeader className="pb-3">
-                  <div className="aspect-square w-full bg-gradient-to-br from-gray-100 to-gray-200 rounded-xl mb-3 flex items-center justify-center overflow-hidden">
-                    <img 
-                      src={product.image} 
-                      alt={product.name}
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                      loading="lazy"
-                      onError={(e) => {
-                        console.log('Image failed to load:', product.image);
-                        e.currentTarget.src = 'https://images.unsplash.com/photo-1560472354-b33ff0c44a43?w=400&h=400&fit=crop&crop=center';
-                        e.currentTarget.alt = 'Product placeholder';
-                      }}
-                    />
-                  </div>
-                  <CardTitle className="text-lg leading-tight">{product.name}</CardTitle>
-                  <CardDescription className="line-clamp-2 text-sm">
-                    {product.description}
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <span className="text-2xl font-bold text-green-600">${product.price}</span>
-                    <Badge 
-                      variant={product.stock > 0 ? "default" : "destructive"}
-                      className={product.stock > 0 ? "bg-green-100 text-green-800 hover:bg-green-200" : ""}
-                    >
-                      {product.stock > 0 ? `${product.stock} available` : "Out of Stock"}
-                    </Badge>
-                  </div>
-                  
-                  <div className="space-y-2 text-sm text-gray-600">
-                    <div className="flex items-center gap-2">
-                      <Store className="w-4 h-4" />
-                      <span className="font-medium">{product.shop.name}</span>
+                <CardDescription>Local businesses in your area</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                {nearbyShops.map((shop: any) => (
+                  <div
+                    key={shop.id}
+                    className="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-50 transition-colors cursor-pointer border border-gray-100 mb-2 last:mb-0"
+                    onClick={() => {
+                      // Search for the shop name instead of filtering
+                      setSearchQuery(shop.name);
+                    }}
+                  >
+                    <div className="w-10 h-10 bg-gradient-to-br from-blue-100 to-blue-200 rounded-lg flex items-center justify-center">
+                      <Store className="w-5 h-5 text-blue-600" />
                     </div>
-                    <div className="flex items-center gap-2">
-                      <MapPin className="w-4 h-4 text-orange-500" />
-                      <button 
-                        onClick={() => {
-                          const encodedLocation = encodeURIComponent(product.shop.location);
+                    <div className="flex-1 min-w-0">
+                      <h4 className="font-medium text-gray-900 truncate">{shop.name}</h4>
+                      <p className="text-sm text-gray-500 truncate">{shop.category || 'Shop'}</p>
+                      {shop.distance && (
+                        <p className="text-xs text-gray-400">{shop.distance}</p>
+                      )}
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          const encodedLocation = encodeURIComponent(shop.location);
                           const googleMapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodedLocation}`;
                           window.open(googleMapsUrl, '_blank');
                         }}
-                        className="text-blue-600 hover:text-blue-800 hover:underline cursor-pointer"
+                        className="flex items-center gap-1 text-xs text-blue-600 hover:text-blue-800 hover:underline mt-1"
                       >
-                        📍 {product.shop.location}
+                        <Plus className="w-3 h-3" />
+                        {shop.location}
                       </button>
                     </div>
-                    <div className="flex items-center gap-2">
-                      <Clock className="w-4 h-4" />
-                      <span>{product.shop.hours}</span>
-                    </div>
                   </div>
+                ))}
+                {nearbyShops.length === 0 && (
+                  <div className="text-center py-6">
+                    <Store className="w-8 h-8 text-gray-300 mx-auto mb-2" />
+                    <p className="text-gray-500 text-sm">No shops found in database</p>
+                    <p className="text-gray-400 text-xs mt-1">Check back later for new shops</p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </div>
 
-                  <Link to={`/product/${product.id}`} className="block">
-                    <Button className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white border-0 gap-2 group">
-                      <Eye className="w-4 h-4" />
-                      View Details
-                    </Button>
+          {/* Right Panel - Products */}
+          <div className="flex-1">
+
+
+            {/* Products Count */}
+            <div className="mb-6">
+              <p className="text-gray-600">
+                {isLoading ? 'Loading products...' : `${filteredProducts.length} product${filteredProducts.length !== 1 ? 's' : ''} available`}
+              </p>
+            </div>
+
+            {isLoading ? (
+              <div className="flex justify-center items-center py-20">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+              </div>
+            ) : filteredProducts.length > 0 ? (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                {filteredProducts.map((product) => (
+                  <Link
+                    key={product.id}
+                    to={`/product/${product.id}`}
+                    className="block"
+                  >
+                    <Card className="group hover:shadow-xl transition-all duration-300 border-0 shadow-md bg-white hover:-translate-y-1 h-full cursor-pointer">
+                      {/* Image - 70% of tile */}
+                      <div className="relative h-48 bg-gradient-to-br from-gray-100 to-gray-200 rounded-t-xl overflow-hidden">
+                        <img 
+                          src={product.image} 
+                          alt={product.name}
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                          loading="lazy"
+                          onError={(e) => {
+                            e.currentTarget.src = 'https://images.unsplash.com/photo-1560472354-b33ff0c44a43?w=400&h=400&fit=crop&crop=center';
+                            e.currentTarget.alt = 'Product placeholder';
+                          }}
+                        />
+                        {product.stock === 0 && (
+                          <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center">
+                            <Badge variant="destructive" className="text-white">
+                              Out of Stock
+                            </Badge>
+                          </div>
+                        )}
+                      </div>
+                      
+                      {/* Content - 30% of tile */}
+                      <CardContent className="p-4 space-y-2">
+                        <h3 className="font-semibold text-gray-900 line-clamp-1">{product.name}</h3>
+                        <div className="flex items-center justify-between">
+                          <span className="text-lg font-bold text-emerald-600">${product.price}</span>
+                          {product.stock > 0 && product.stock <= 5 && (
+                            <Badge variant="outline" className="text-xs bg-orange-50 text-orange-700 border-orange-200">
+                              Only a few left!
+                            </Badge>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-2 text-sm text-gray-600">
+                          <Store className="w-3 h-3" />
+                          <span className="truncate">{product.shop.name}</span>
+                        </div>
+                        <button
+                          onClick={(e) => {
+                            e.preventDefault();
+                            const encodedLocation = encodeURIComponent(product.shop.location);
+                            const googleMapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodedLocation}`;
+                            window.open(googleMapsUrl, '_blank');
+                          }}
+                          className="flex items-center gap-1 text-xs text-blue-600 hover:text-blue-800 hover:underline"
+                        >
+                          <Plus className="w-3 h-3" />
+                          {product.shop.location}
+                        </button>
+                      </CardContent>
+                    </Card>
                   </Link>
+                ))}
+              </div>
+            ) : (
+              <Card className="bg-white/70 backdrop-blur-sm border-0 shadow-lg">
+                <CardContent className="text-center py-16">
+                  <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <Search className="w-8 h-8 text-gray-400" />
+                  </div>
+                  <p className="text-gray-500 text-lg mb-4">No products found matching your criteria</p>
+                  <Button 
+                    onClick={() => {
+                      setSearchQuery("");
+                      setCategoryFilter("all");
+                    }}
+                    variant="outline"
+                  >
+                    Clear Filters
+                  </Button>
                 </CardContent>
               </Card>
-            ))}
+            )}
           </div>
-        ) : (
-          <Card className="bg-white/70 backdrop-blur-sm border-0 shadow-lg">
-            <CardContent className="text-center py-16">
-              <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <Search className="w-8 h-8 text-gray-400" />
-              </div>
-              <p className="text-gray-500 text-lg mb-4">No products found matching your criteria</p>
-              <Button 
-                onClick={() => {
-                  setSearchQuery("");
-                  setCategoryFilter("all");
-                  setShopFilter("all");
-                }}
-                variant="outline"
-              >
-                Clear Filters
-              </Button>
-            </CardContent>
-          </Card>
-        )}
+        </div>
+      </div>
+
+      {/* Mobile Nearby Shops (Bottom Sheet Style) */}
+      <div className="lg:hidden fixed bottom-4 right-4 z-40">
+        <Button
+          onClick={() => {
+            // Could implement a bottom sheet modal for mobile
+            alert('Nearby shops feature - mobile version coming soon!');
+          }}
+          className="rounded-full w-12 h-12 bg-blue-600 hover:bg-blue-700 shadow-lg"
+        >
+          <Store className="w-5 h-5 text-white" />
+        </Button>
       </div>
 
 
 
       {/* Footer */}
-      <footer className="bg-gray-900 text-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <div className="flex flex-col sm:flex-row justify-between items-center space-y-4 sm:space-y-0">
+      <footer className="bg-gray-900 text-white mt-16">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+          <div className="flex flex-col sm:flex-row justify-between items-center space-y-3 sm:space-y-0">
             <div className="flex items-center space-x-3">
-              <div className="w-8 h-8 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-lg flex items-center justify-center">
-                <Store className="w-5 h-5 text-white" />
+              <div className="w-6 h-6 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-lg flex items-center justify-center">
+                <Store className="w-4 h-4 text-white" />
               </div>
-              <span className="text-gray-300">© 2024 LocalPick. Supporting local businesses.</span>
+              <span className="text-gray-300 text-sm">© 2024 LocalPick Market. Supporting local businesses.</span>
             </div>
             <div className="flex items-center space-x-2 text-gray-400">
               <MapPin className="w-4 h-4 text-orange-400" />

@@ -22,7 +22,7 @@ const Register = () => {
     shopHours: ''
   });
   const [loading, setLoading] = useState(false);
-  const { signUp } = useAuth();
+  const { signUp, resendVerification } = useAuth();
   const navigate = useNavigate();
 
   const handleInputChange = (field: string, value: string) => {
@@ -59,14 +59,21 @@ const Register = () => {
         hours: formData.shopHours
       } : undefined;
 
-      const { error } = await signUp(formData.email, formData.password, formData.role, shopData);
+      const result = await signUp(formData.email, formData.password, formData.role, shopData);
       
-      if (error) {
+      if (result.error) {
         toast({
           title: 'Registration Failed',
-          description: error.message,
+          description: result.error.message,
           variant: 'destructive'
         });
+      } else if (result.isExistingUser) {
+        toast({
+          title: 'Account Already Exists',
+          description: '',
+          variant: 'default'
+        });
+        navigate('/login');
       } else {
         toast({
           title: 'Registration Successful!',

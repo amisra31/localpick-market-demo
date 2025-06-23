@@ -239,6 +239,10 @@ export class MemStorage implements IStorage {
     return updatedProduct;
   }
 
+  async deleteProduct(id: number): Promise<boolean> {
+    return this.products.delete(id);
+  }
+
   // Reservation operations
   async getReservation(id: number): Promise<Reservation | undefined> {
     return this.reservations.get(id);

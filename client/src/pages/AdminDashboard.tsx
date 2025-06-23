@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { mockDataService } from "@/services/mockData";
+import { dataService } from "@/services/dataService";
 import { Shop, Product, Reservation, ReservationWithDetails } from "@/types";
 import { ArrowLeft, Store, Package, ShoppingBag, AlertTriangle } from "lucide-react";
 

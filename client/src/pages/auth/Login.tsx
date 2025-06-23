@@ -133,9 +133,9 @@ const Login = () => {
             <div className="mt-6 p-4 bg-gray-50 rounded-lg">
               <h6 className="text-sm font-medium text-gray-700 mb-2">Demo Accounts</h6>
               <div className="text-xs text-gray-600 space-y-1">
-                <p><strong>User:</strong> user@demo.com / password123</p>
-                <p><strong>Merchant:</strong> merchant@demo.com / password123</p>
-                <p><strong>Admin:</strong> admin@demo.com / password123</p>
+                <p><strong>User:</strong> customer@demo.com / demo123</p>
+                <p><strong>Merchant:</strong> merchant@demo.com / demo123</p>
+                <p><strong>Admin:</strong> admin@demo.com / demo123</p>
               </div>
             </div>
           </CardContent>
