@@ -9,7 +9,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuth } from "@/contexts/AuthContext";
 import { dataService } from "@/services/dataService";
 import { Shop, Product, Reservation, ReservationWithDetails } from "@/types";
-import { ArrowLeft, Store, Package, ShoppingBag, AlertTriangle, Shield, BarChart3, LogOut } from "lucide-react";
+import { ArrowLeft, Store, Package, ShoppingBag, AlertTriangle, Shield, BarChart3, LogOut, Upload } from "lucide-react";
+import AdminBulkUpload from "@/components/AdminBulkUpload";
 
 const AdminPortal = () => {
   const navigate = useNavigate();
@@ -23,6 +24,7 @@ const AdminPortal = () => {
     totalReservations: 0,
     lowStockProducts: 0
   });
+  const [isBulkUploadOpen, setIsBulkUploadOpen] = useState(false);
 
   useEffect(() => {
     // Check if user is authenticated and is an admin
@@ -34,31 +36,26 @@ const AdminPortal = () => {
     loadData();
   }, [user, navigate]);
 
-  const loadData = () => {
-    const allShops = mockDataService.getShops();
-    const allProducts = mockDataService.getProducts();
-    const allReservations = mockDataService.getReservations();
+  const loadData = async () => {
+    try {
+      const allShops = await dataService.getShops();
+      const allProducts = await dataService.getProducts();
+      // Note: reservations API is not yet implemented in dataService
+      const allReservations: ReservationWithDetails[] = [];
 
-    const enhancedReservations: ReservationWithDetails[] = allReservations.map(reservation => {
-      const product = allProducts.find(p => p.id === reservation.productId);
-      const shop = allShops.find(s => s.id === reservation.shopId);
-      return {
-        ...reservation,
-        product: product!,
-        shop: shop!
-      };
-    });
+      setShops(allShops);
+      setProducts(allProducts);
+      setReservations(allReservations);
 
-    setShops(allShops);
-    setProducts(allProducts);
-    setReservations(enhancedReservations);
-
-    setStats({
-      totalShops: allShops.length,
-      totalProducts: allProducts.length,
-      totalReservations: allReservations.length,
-      lowStockProducts: allProducts.filter(p => p.stock > 0 && p.stock < 3).length
-    });
+      setStats({
+        totalShops: allShops.length,
+        totalProducts: allProducts.length,
+        totalReservations: allReservations.length,
+        lowStockProducts: allProducts.filter(p => p.stock > 0 && p.stock < 3).length
+      });
+    } catch (error) {
+      console.error('Error loading admin data:', error);
+    }
   };
 
   const getProductsByShop = (shopId: string) => {
@@ -82,6 +79,32 @@ const AdminPortal = () => {
     
     const diffInDays = Math.floor(diffInHours / 24);
     return `${diffInDays}d ago`;
+  };
+
+  const handleBulkUpload = async (shops: any[], products: any[]) => {
+    try {
+      const response = await fetch('/api/shops/bulk-upload', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ shops, products }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Bulk upload failed');
+      }
+
+      const result = await response.json();
+      
+      // Reload data to show new shops and products
+      loadData();
+      
+      return result;
+    } catch (error) {
+      console.error('Bulk upload error:', error);
+      throw error;
+    }
   };
 
   return (
@@ -176,13 +199,24 @@ const AdminPortal = () => {
           <TabsContent value="shops">
             <Card className="border-0 shadow-lg bg-white/70 backdrop-blur-sm">
               <CardHeader>
-                <div className="flex items-center gap-2">
-                  <BarChart3 className="w-5 h-5 text-blue-600" />
-                  <CardTitle>Shop Directory</CardTitle>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <BarChart3 className="w-5 h-5 text-blue-600" />
+                      <CardTitle>Shop Directory</CardTitle>
+                    </div>
+                    <CardDescription>
+                      Monitor all registered shops and their performance
+                    </CardDescription>
+                  </div>
+                  <Button 
+                    onClick={() => setIsBulkUploadOpen(true)}
+                    className="flex items-center gap-2 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
+                  >
+                    <Upload className="h-4 w-4" />
+                    Bulk Upload
+                  </Button>
                 </div>
-                <CardDescription>
-                  Monitor all registered shops and their performance
-                </CardDescription>
               </CardHeader>
               <CardContent>
                 <Table>
@@ -346,6 +380,13 @@ const AdminPortal = () => {
           </TabsContent>
         </Tabs>
       </div>
+
+      {/* Bulk Upload Dialog */}
+      <AdminBulkUpload
+        isOpen={isBulkUploadOpen}
+        onClose={() => setIsBulkUploadOpen(false)}
+        onSave={handleBulkUpload}
+      />
     </div>
   );
 };

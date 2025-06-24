@@ -172,4 +172,107 @@ export function registerShopRoutes(app: Express) {
       res.status(500).json({ error: 'Failed to fetch shop stats' });
     }
   });
+
+  // Bulk upload shops and products (Admin only)
+  app.post('/api/shops/bulk-upload', async (req, res) => {
+    try {
+      const { shops, products } = req.body;
+      
+      if (!shops || !Array.isArray(shops)) {
+        return res.status(400).json({ error: 'Shops array is required' });
+      }
+      
+      if (!products || !Array.isArray(products)) {
+        return res.status(400).json({ error: 'Products array is required' });
+      }
+
+      let createdShops: any[] = [];
+      let createdProducts: any[] = [];
+      let shopIdMap: Map<string, string> = new Map(); // Map shop identifiers to generated IDs
+
+      // First, create all shops
+      for (const shopData of shops) {
+        const shopId = nanoid();
+        const shop = {
+          id: shopId,
+          name: shopData.shop_name,
+          category: shopData.shop_category,
+          location: shopData.location,
+          phone: shopData.phone || null,
+          hours: shopData.hours,
+          business_email: shopData.business_email || null,
+          website: shopData.website || null,
+          social_links: null,
+          about_shop: shopData.about_shop || null,
+          shop_photo: null,
+          status: 'approved' as const, // Auto-approve shops created by admin
+          owner_id: nanoid(), // Generate a unique owner ID
+          submitted_at: Date.now(),
+          approved_at: Date.now(),
+          rejected_at: null,
+          rejection_reason: null,
+          created_at: Date.now(),
+          updated_at: Date.now()
+        };
+        
+        const [createdShop] = await db.insert(schema.shops).values(shop).returning();
+        createdShops.push(createdShop);
+        
+        // Map shop identifier to generated ID
+        const shopIdentifier = shopData.shop_name.toLowerCase().replace(/\s+/g, '_');
+        shopIdMap.set(shopIdentifier, shopId);
+        shopIdMap.set(shopData.shop_id || shopIdentifier, shopId); // Also map provided shop_id
+      }
+
+      // Then, create all products
+      for (const productData of products) {
+        // Find the corresponding shop ID
+        let shopId = shopIdMap.get(productData.shop_id);
+        
+        if (!shopId) {
+          // Try to find shop by name
+          const matchingShop = createdShops.find(shop => 
+            shop.name.toLowerCase().replace(/\s+/g, '_') === productData.shop_id
+          );
+          shopId = matchingShop?.id;
+        }
+
+        if (!shopId) {
+          console.warn(`No matching shop found for product: ${productData.product_name} (shop_id: ${productData.shop_id})`);
+          continue; // Skip this product
+        }
+
+        const product = {
+          id: nanoid(),
+          shop_id: shopId,
+          name: productData.product_name,
+          image: productData.image_url || '/placeholder.svg',
+          price: parseFloat(productData.price),
+          description: productData.description,
+          stock: parseInt(productData.stock),
+          is_archived: false,
+          created_at: Date.now(),
+          updated_at: Date.now()
+        };
+
+        const [createdProduct] = await db.insert(schema.products).values(product).returning();
+        createdProducts.push(createdProduct);
+      }
+
+      // TODO: Add real-time sync via WebSocket broadcasting
+      // Broadcast new shops and products to all connected clients
+
+      res.status(201).json({
+        success: true,
+        created_shops: createdShops.length,
+        created_products: createdProducts.length,
+        shops: createdShops,
+        products: createdProducts
+      });
+
+    } catch (error) {
+      console.error('Error in bulk upload:', error);
+      res.status(500).json({ error: 'Failed to upload shops and products' });
+    }
+  });
 }

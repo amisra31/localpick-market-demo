@@ -1,0 +1,216 @@
+
+> rest-express@1.0.0 dev
+> NODE_ENV=development tsx server/index.ts
+
+✅ WebSocket Server created successfully
+WebSocket server initialized
+12:59:55 AM [express] serving on port 3001
+🔄 Bulk upload request received
+📦 Request body: {
+  "shops": [
+    {
+      "shop_name": "Final Test",
+      "shop_category": "Food",
+      "location": "Test Location",
+      "hours": "9-5"
+    }
+  ],
+  "products": [
+    {
+      "shop_id": "final_test",
+      "product_name": "Test Product",
+      "price": "10.00",
+      "description": "Test",
+      "stock": "5"
+    }
+  ]
+}
+✅ Processing 1 shops and 1 products
+🔄 Starting bulk operations
+🏪 Processing shop: Final Test
+🏪 Shop object to insert: {
+  "id": "bXcZL5vLMvmBJ4E8I0mSa",
+  "name": "Final Test",
+  "category": "Food",
+  "location": "Test Location",
+  "phone": null,
+  "hours": "9-5",
+  "business_email": null,
+  "website": null,
+  "social_links": null,
+  "about_shop": null,
+  "shop_photo": null,
+  "status": "approved",
+  "owner_id": "PGAhRwTZTmBpWXMfXiiAS",
+  "submitted_at": 1750793408484,
+  "approved_at": 1750793408484,
+  "rejected_at": null,
+  "rejection_reason": null,
+  "created_at": 1750793408484,
+  "updated_at": 1750793408484
+}
+✅ Shop created successfully: Final Test
+📦 Processing product: Test Product
+📦 Product object to insert: {
+  "id": "_wuJMJnSlzH3RKSVdeZhv",
+  "shop_id": "bXcZL5vLMvmBJ4E8I0mSa",
+  "name": "Test Product",
+  "image": "/placeholder.svg",
+  "price": 10,
+  "description": "Test",
+  "stock": 5,
+  "is_archived": false,
+  "created_at": 1750793408487,
+  "updated_at": 1750793408487
+}
+✅ Product created successfully: Test Product
+1:00:08 AM [express] POST /api/shops/bulk-upload 201 in 7ms :: {"success":true,"created_shops":1,"cr…
+🔄 Bulk upload request received
+📦 Request body: {
+  "shops": [
+    {
+      "shop_name": "Test Bakery",
+      "shop_category": "Food",
+      "location": "123 Test Street, Test City",
+      "phone": "+1-555-TEST",
+      "hours": "Mon-Fri: 8AM-6PM",
+      "business_email": "contact@testbakery.com",
+      "website": "https://testbakery.com",
+      "about_shop": "A cozy neighborhood bakery",
+      "owner_name": "Test Owner",
+      "owner_email": "owner@testbakery.com"
+    }
+  ],
+  "products": [
+    {
+      "shop_id": "test_bakery",
+      "product_name": "Fresh Bread",
+      "price": "5.99",
+      "description": "Freshly baked daily",
+      "stock": "10",
+      "image_url": "https://example.com/bread.jpg"
+    },
+    {
+      "shop_id": "test_bakery",
+      "product_name": "Chocolate Cake",
+      "price": "25.99",
+      "description": "Delicious chocolate cake",
+      "stock": "5",
+      "image_url": "https://example.com/cake.jpg"
+    }
+  ]
+}
+✅ Processing 1 shops and 2 products
+🔄 Starting bulk operations
+🏪 Processing shop: Test Bakery
+🏪 Shop object to insert: {
+  "id": "eIz_P40f-tG-72LB41BF-",
+  "name": "Test Bakery",
+  "category": "Food",
+  "location": "123 Test Street, Test City",
+  "phone": "+1-555-TEST",
+  "hours": "Mon-Fri: 8AM-6PM",
+  "business_email": "contact@testbakery.com",
+  "website": "https://testbakery.com",
+  "social_links": null,
+  "about_shop": "A cozy neighborhood bakery",
+  "shop_photo": null,
+  "status": "approved",
+  "owner_id": "e0Sx2oJwJ62JTg8UWhMV7",
+  "submitted_at": 1750793422625,
+  "approved_at": 1750793422625,
+  "rejected_at": null,
+  "rejection_reason": null,
+  "created_at": 1750793422625,
+  "updated_at": 1750793422625
+}
+✅ Shop created successfully: Test Bakery
+📦 Processing product: Fresh Bread
+📦 Product object to insert: {
+  "id": "DWP7ue-kg5UyuibO05BiA",
+  "shop_id": "eIz_P40f-tG-72LB41BF-",
+  "name": "Fresh Bread",
+  "image": "https://example.com/bread.jpg",
+  "price": 5.99,
+  "description": "Freshly baked daily",
+  "stock": 10,
+  "is_archived": false,
+  "created_at": 1750793422627,
+  "updated_at": 1750793422627
+}
+✅ Product created successfully: Fresh Bread
+📦 Processing product: Chocolate Cake
+📦 Product object to insert: {
+  "id": "ABAC0-JN1xn2xuDRdPf9m",
+  "shop_id": "eIz_P40f-tG-72LB41BF-",
+  "name": "Chocolate Cake",
+  "image": "https://example.com/cake.jpg",
+  "price": 25.99,
+  "description": "Delicious chocolate cake",
+  "stock": 5,
+  "is_archived": false,
+  "created_at": 1750793422628,
+  "updated_at": 1750793422628
+}
+✅ Product created successfully: Chocolate Cake
+1:00:22 AM [express] POST /api/shops/bulk-upload 201 in 5ms :: {"success":true,"created_shops":1,"cr…
+Browserslist: browsers data (caniuse-lite) is 8 months old. Please run:
+  npx update-browserslist-db@latest
+  Why you should do it regularly: https://github.com/browserslist/update-db#readme
+1:02:09 AM [express] GET /api/shops 200 in 4ms :: [{"id":"shop_001","name":"Brooklyn Bites","categor…
+1:02:09 AM [express] GET /api/products 200 in 5ms :: [{"id":"prod_001","shop_id":"shop_001","name":"…
+1:02:10 AM [express] GET /api/shops 304 in 3ms :: [{"id":"shop_001","name":"Brooklyn Bites","categor…
+1:02:10 AM [express] GET /api/placeholder/300/200 200 in 8ms
+1:02:17 AM [express] GET /api/products 304 in 5ms :: [{"id":"prod_001","shop_id":"shop_001","name":"…
+1:02:17 AM [express] GET /api/shops 304 in 2ms :: [{"id":"shop_001","name":"Brooklyn Bites","categor…
+1:02:17 AM [express] GET /api/shops 304 in 1ms :: [{"id":"shop_001","name":"Brooklyn Bites","categor…
+1:02:17 AM [express] GET /api/placeholder/300/200 200 in 4ms
+1:03:34 AM [express] GET /api/shops 304 in 4ms :: [{"id":"shop_001","name":"Brooklyn Bites","categor…
+1:03:34 AM [express] GET /api/products 304 in 1ms :: [{"id":"prod_001","shop_id":"shop_001","name":"…
+1:03:34 AM [express] GET /api/shops 304 in 5ms :: [{"id":"shop_001","name":"Brooklyn Bites","categor…
+1:03:34 AM [express] GET /api/placeholder/300/200 200 in 5ms
+1:05:43 AM [express] GET /api/products 200 in 12ms :: [{"id":"prod_001","shop_id":"shop_001","name":…
+1:05:43 AM [express] GET /api/shops 200 in 1ms :: [{"id":"shop_001","name":"Brooklyn Bites","categor…
+1:05:43 AM [express] GET /api/shops 304 in 2ms :: [{"id":"shop_001","name":"Brooklyn Bites","categor…
+1:05:43 AM [express] GET /api/shops 304 in 2ms :: [{"id":"shop_001","name":"Brooklyn Bites","categor…
+1:06:50 AM [express] GET /api/products 200 in 12ms :: [{"id":"prod_001","shop_id":"shop_001","name":…
+1:06:50 AM [express] GET /api/shops 200 in 2ms :: [{"id":"shop_001","name":"Brooklyn Bites","categor…
+1:06:50 AM [express] GET /api/shops 304 in 3ms :: [{"id":"shop_001","name":"Brooklyn Bites","categor…
+1:06:50 AM [express] GET /api/placeholder/300/200 200 in 13ms
+1:07:07 AM [express] GET /api/shops 304 in 5ms :: [{"id":"shop_001","name":"Brooklyn Bites","categor…
+1:07:07 AM [express] GET /api/shops/shop_001/products 200 in 3ms :: [{"id":"prod_001","shop_id":"sho…
+1:07:07 AM [express] GET /api/shops/shop_001/orders 200 in 4ms :: [{"id":"DjIELcXz1i3C2YBI8BDMw","sh…
+1:07:13 AM [express] GET /api/placeholder/300/200 200 in 11ms
+1:07:27 AM [express] GET /api/placeholder/300/200 200 in 12ms
+1:07:53 AM [express] GET /api/placeholder/300/200 200 in 9ms
+1:08:53 AM [express] GET /api/products 200 in 4ms :: [{"id":"prod_001","shop_id":"shop_001","name":"…
+1:08:53 AM [express] GET /api/shops 200 in 1ms :: [{"id":"shop_001","name":"Brooklyn Bites","categor…
+1:08:53 AM [express] GET /api/shops 304 in 2ms :: [{"id":"shop_001","name":"Brooklyn Bites","categor…
+1:09:56 AM [vite] hmr update /src/pages/AdminDashboard.tsx, /src/index.css?v=MDaqDdU4-2A8ZP-CslW62
+1:10:30 AM [vite] hmr update /src/pages/AdminDashboard.tsx, /src/index.css?v=MDaqDdU4-2A8ZP-CslW62
+1:10:41 AM [express] GET /api/shops 200 in 74ms :: [{"id":"shop_001","name":"Brooklyn Bites","catego…
+1:10:47 AM [express] GET /api/shops 200 in 3ms :: [{"id":"shop_001","name":"Brooklyn Bites","categor…
+1:11:13 AM [vite] page reload src/services/dataService.ts
+1:11:22 AM [express] GET /api/products 200 in 4ms :: [{"id":"prod_001","shop_id":"shop_001","name":"…
+1:11:57 AM [express] GET /api/products 304 in 3ms :: [{"id":"prod_001","shop_id":"shop_001","name":"…
+1:11:57 AM [express] GET /api/shops 304 in 1ms :: [{"id":"shop_001","name":"Brooklyn Bites","categor…
+1:11:57 AM [express] GET /api/shops 304 in 1ms :: [{"id":"shop_001","name":"Brooklyn Bites","categor…
+1:12:07 AM [express] GET /api/products 304 in 6ms :: [{"id":"prod_001","shop_id":"shop_001","name":"…
+1:12:07 AM [express] GET /api/shops 304 in 2ms :: [{"id":"shop_001","name":"Brooklyn Bites","categor…
+1:12:07 AM [express] GET /api/shops 304 in 2ms :: [{"id":"shop_001","name":"Brooklyn Bites","categor…
+1:13:29 AM [vite] hmr update /src/pages/AdminPortal.tsx, /src/index.css?v=MDaqDdU4-2A8ZP-CslW62
+1:13:59 AM [vite] hmr update /src/pages/AdminPortal.tsx, /src/index.css?v=MDaqDdU4-2A8ZP-CslW62
+1:14:12 AM [vite] hmr update /src/pages/AdminPortal.tsx, /src/index.css?v=MDaqDdU4-2A8ZP-CslW62
+1:14:26 AM [vite] hmr update /src/pages/AdminPortal.tsx, /src/index.css?v=MDaqDdU4-2A8ZP-CslW62
+1:14:48 AM [express] GET /api/shops 304 in 1ms :: [{"id":"shop_001","name":"Brooklyn Bites","categor…
+1:14:48 AM [express] GET /api/products 200 in 1ms :: [{"id":"prod_001","shop_id":"shop_001","name":"…
+1:16:19 AM [vite] hmr update /src/pages/AdminPortal.tsx, /src/index.css?v=MDaqDdU4-2A8ZP-CslW62
+1:16:29 AM [vite] hmr update /src/pages/AdminPortal.tsx, /src/index.css?v=MDaqDdU4-2A8ZP-CslW62
+1:16:43 AM [vite] hmr update /src/pages/AdminPortal.tsx, /src/index.css?v=MDaqDdU4-2A8ZP-CslW62
+1:16:54 AM [vite] hmr update /src/pages/AdminPortal.tsx, /src/index.css?v=MDaqDdU4-2A8ZP-CslW62
+1:17:05 AM [vite] hmr update /src/pages/AdminPortal.tsx, /src/index.css?v=MDaqDdU4-2A8ZP-CslW62
+1:17:14 AM [vite] hmr update /src/pages/AdminPortal.tsx, /src/index.css?v=MDaqDdU4-2A8ZP-CslW62
+1:17:26 AM [vite] hmr update /src/pages/AdminPortal.tsx, /src/index.css?v=MDaqDdU4-2A8ZP-CslW62
+1:17:34 AM [vite] hmr update /src/pages/AdminPortal.tsx, /src/index.css?v=MDaqDdU4-2A8ZP-CslW62
+1:18:02 AM [express] GET /api/shops 304 in 3ms :: [{"id":"shop_001","name":"Brooklyn Bites","categor…
+1:18:02 AM [express] GET /api/products 304 in 1ms :: [{"id":"prod_001","shop_id":"shop_001","name":"…

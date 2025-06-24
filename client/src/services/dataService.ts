@@ -88,17 +88,21 @@ export class DataService {
   // ======= PRODUCTS API =======
   
   async getProducts(): Promise<Product[]> {
-    // Get all products from all shops
     try {
-      const shops = await this.getShops();
-      const allProducts: Product[] = [];
+      const response = await fetch(`${this.baseUrl}/products`);
+      if (!response.ok) throw new Error('Failed to fetch products');
+      const dbProducts = await response.json();
       
-      for (const shop of shops) {
-        const shopProducts = await this.getProductsByShopId(shop.id);
-        allProducts.push(...shopProducts);
-      }
-      
-      return allProducts;
+      // Transform database format to frontend format
+      return dbProducts.map((dbProduct: any) => ({
+        id: dbProduct.id,
+        shopId: dbProduct.shop_id,
+        name: dbProduct.name,
+        image: dbProduct.image,
+        price: dbProduct.price,
+        description: dbProduct.description,
+        stock: dbProduct.stock
+      }));
     } catch (error) {
       console.error('Failed to get all products:', error);
       return [];

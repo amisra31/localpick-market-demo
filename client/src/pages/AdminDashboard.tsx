@@ -4,15 +4,18 @@ import { Link } from "react-router-dom";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { dataService } from "@/services/dataService";
 import { Shop, Product, Reservation, ReservationWithDetails } from "@/types";
-import { ArrowLeft, Store, Package, ShoppingBag, AlertTriangle } from "lucide-react";
+import { ArrowLeft, Store, Package, ShoppingBag, AlertTriangle, Upload } from "lucide-react";
+import AdminBulkUpload from "@/components/AdminBulkUpload";
 
 const AdminDashboard = () => {
   const [shops, setShops] = useState<Shop[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
   const [reservations, setReservations] = useState<ReservationWithDetails[]>([]);
+  const [isBulkUploadOpen, setIsBulkUploadOpen] = useState(false);
   const [stats, setStats] = useState({
     totalShops: 0,
     totalProducts: 0,
@@ -24,33 +27,27 @@ const AdminDashboard = () => {
     loadData();
   }, []);
 
-  const loadData = () => {
-    const allShops = mockDataService.getShops();
-    const allProducts = mockDataService.getProducts();
-    const allReservations = mockDataService.getReservations();
+  const loadData = async () => {
+    try {
+      const allShops = await dataService.getShops();
+      const allProducts = await dataService.getProducts();
+      // Note: reservations API is not yet implemented in dataService
+      const allReservations: ReservationWithDetails[] = [];
 
-    // Enhance reservations with product and shop details
-    const enhancedReservations: ReservationWithDetails[] = allReservations.map(reservation => {
-      const product = allProducts.find(p => p.id === reservation.productId);
-      const shop = allShops.find(s => s.id === reservation.shopId);
-      return {
-        ...reservation,
-        product: product!,
-        shop: shop!
-      };
-    });
+      setShops(allShops);
+      setProducts(allProducts);
+      setReservations(allReservations);
 
-    setShops(allShops);
-    setProducts(allProducts);
-    setReservations(enhancedReservations);
-
-    // Calculate stats
-    setStats({
-      totalShops: allShops.length,
-      totalProducts: allProducts.length,
-      totalReservations: allReservations.length,
-      lowStockProducts: allProducts.filter(p => p.stock > 0 && p.stock < 2).length
-    });
+      // Calculate stats
+      setStats({
+        totalShops: allShops.length,
+        totalProducts: allProducts.length,
+        totalReservations: allReservations.length,
+        lowStockProducts: allProducts.filter(p => p.stock > 0 && p.stock < 2).length
+      });
+    } catch (error) {
+      console.error('Error loading data:', error);
+    }
   };
 
   const getProductsByShop = (shopId: string) => {
@@ -74,6 +71,32 @@ const AdminDashboard = () => {
     
     const diffInDays = Math.floor(diffInHours / 24);
     return `${diffInDays} day${diffInDays > 1 ? 's' : ''} ago`;
+  };
+
+  const handleBulkUpload = async (shops: any[], products: any[]) => {
+    try {
+      const response = await fetch('/api/shops/bulk-upload', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ shops, products }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Bulk upload failed');
+      }
+
+      const result = await response.json();
+      
+      // Reload data to show new shops and products
+      loadData();
+      
+      return result;
+    } catch (error) {
+      console.error('Bulk upload error:', error);
+      throw error;
+    }
   };
 
   return (
@@ -147,10 +170,21 @@ const AdminDashboard = () => {
           <TabsContent value="shops">
             <Card>
               <CardHeader>
-                <CardTitle>All Shops</CardTitle>
-                <CardDescription>
-                  Manage and monitor shop activity across the marketplace
-                </CardDescription>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle>All Shops</CardTitle>
+                    <CardDescription>
+                      Manage and monitor shop activity across the marketplace
+                    </CardDescription>
+                  </div>
+                  <Button 
+                    onClick={() => setIsBulkUploadOpen(true)}
+                    className="flex items-center gap-2"
+                  >
+                    <Upload className="h-4 w-4" />
+                    Bulk Upload
+                  </Button>
+                </div>
               </CardHeader>
               <CardContent>
                 <Table>
@@ -209,7 +243,7 @@ const AdminDashboard = () => {
                         <TableRow key={product.id}>
                           <TableCell className="font-medium">{product.name}</TableCell>
                           <TableCell>{shop?.name}</TableCell>
-                          <TableCell>₹{product.price}</TableCell>
+                          <TableCell>${product.price}</TableCell>
                           <TableCell>{product.stock}</TableCell>
                           <TableCell>
                             <Badge variant={
@@ -286,6 +320,13 @@ const AdminDashboard = () => {
           </TabsContent>
         </Tabs>
       </div>
+
+      {/* Bulk Upload Dialog */}
+      <AdminBulkUpload
+        isOpen={isBulkUploadOpen}
+        onClose={() => setIsBulkUploadOpen(false)}
+        onSave={handleBulkUpload}
+      />
     </div>
   );
 };
