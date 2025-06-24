@@ -1,6 +1,7 @@
 
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
+import { clearNavigationCache } from '@/utils/roleNavigation';
 
 export type UserRole = 'user' | 'merchant' | 'admin';
 
@@ -252,6 +253,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     await supabase.auth.signOut();
     setUser(null);
     localStorage.removeItem('localpick_user');
+    
+    // Clear all cached routes and navigation state to prevent route reuse
+    clearNavigationCache();
   };
 
   const resendVerification = async (email: string) => {

@@ -8,6 +8,7 @@ import { Label } from '@/components/ui/label';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from '@/hooks/use-toast';
 import { ArrowLeft, Mail, Lock, LogIn } from 'lucide-react';
+import { getRoleLandingPage } from '@/utils/roleNavigation';
 
 const Login = () => {
   const [email, setEmail] = useState('');
@@ -17,15 +18,13 @@ const Login = () => {
   const navigate = useNavigate();
   const location = useLocation();
 
-  const from = location.state?.from?.pathname || '/';
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email || !password) return;
 
     setLoading(true);
     try {
-      const { error } = await signIn(email, password);
+      const { data, error } = await signIn(email, password);
       
       if (error) {
         toast({
@@ -33,12 +32,15 @@ const Login = () => {
           description: error.message,
           variant: 'destructive'
         });
-      } else {
+      } else if (data?.user) {
         toast({
           title: 'Welcome back!',
           description: 'You have been successfully logged in.'
         });
-        navigate(from, { replace: true });
+        
+        // Always redirect to role-based landing page to prevent route reuse
+        const landingPage = getRoleLandingPage(data.user.role);
+        navigate(landingPage, { replace: true });
       }
     } catch (error) {
       toast({

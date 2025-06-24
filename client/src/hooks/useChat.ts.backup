@@ -1,0 +1,90 @@
+import { useCallback, useEffect, useRef } from 'react';
+import { useWebSocketContext } from '@/contexts/WebSocketContext';
+
+interface UseChatOptions {
+  onMessage?: (message: any) => void;
+  onConnect?: () => void;
+  onDisconnect?: () => void;
+  onError?: (error: any) => void;
+  enabled?: boolean;
+}
+
+export const useChat = (options: UseChatOptions = {}) => {
+  const {
+    isConnected,
+    isConnecting,
+    connectionError,
+    showReconnectBanner,
+    sendMessage,
+    subscribe,
+    joinChat,
+    leaveChat,
+    markMessageRead,
+    forceReconnect
+  } = useWebSocketContext();
+
+  const {
+    onMessage,
+    onConnect,
+    onDisconnect,
+    onError,
+    enabled = true
+  } = options;
+
+  const unsubscribeRef = useRef<(() => void) | null>(null);
+
+  // Handle WebSocket messages
+  const handleMessage = useCallback((message: any) => {
+    switch (message.type) {
+      case 'connection_established':
+        onConnect?.();
+        break;
+        
+      case 'disconnected':
+        onDisconnect?.();
+        break;
+        
+      case 'error':
+        onError?.(message.error);
+        break;
+        
+      default:
+        onMessage?.(message);
+        break;
+    }
+  }, [onMessage, onConnect, onDisconnect, onError]);
+
+  // Subscribe to WebSocket messages when enabled
+  useEffect(() => {
+    if (enabled) {
+      const unsubscribe = subscribe(handleMessage);
+      unsubscribeRef.current = unsubscribe;
+      
+      return () => {
+        unsubscribe();
+        unsubscribeRef.current = null;
+      };
+    }
+  }, [enabled, subscribe, handleMessage]);
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      if (unsubscribeRef.current) {
+        unsubscribeRef.current();
+      }
+    };
+  }, []);
+
+  return {
+    isConnected,
+    isConnecting,
+    connectionError,
+    showReconnectBanner,
+    sendMessage,
+    joinChat,
+    leaveChat,
+    markMessageRead,
+    forceReconnect
+  };
+};

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -7,7 +7,8 @@ import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/contexts/AuthContext';
 import { DirectMessage, Product, Shop } from '@/types';
 import { toast } from '@/hooks/use-toast';
-import { MessageSquare, Send, X, Store, User, Loader2 } from 'lucide-react';
+import { MessageSquare, Send, X, Store, User, Loader2, Wifi, WifiOff } from 'lucide-react';
+import { useChatWebSocket } from '@/hooks/useChatWebSocket';
 
 interface CustomerMerchantChatProps {
   isOpen: boolean;
@@ -34,17 +35,73 @@ export const CustomerMerchantChat: React.FC<CustomerMerchantChatProps> = ({
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  // Determine current user details
-  const currentUserId = customerId || user?.id || `guest_${Date.now()}`;
+  // Determine current user details - use stable guest ID
+  const currentUserId = useMemo(() => {
+    return customerId || user?.id || `guest_${Date.now()}`;
+  }, [customerId, user?.id]);
+  
   const currentUserName = customerName || user?.name || 'Guest User';
   const isCustomer = !user || user.role === 'user';
+
+  // WebSocket connection for real-time messaging
+  const {
+    isConnected,
+    isConnecting,
+    connectionError,
+    joinChat,
+    leaveChat,
+    markMessageRead
+  } = useChatWebSocket({
+    enabled: true, // Always keep WebSocket connection active
+    onMessage: (message) => {
+      console.log('📨 Received WebSocket message:', message);
+      
+      if (message.type === 'message_received') {
+        const newMsg = message.payload;
+        // Only add message if it belongs to this chat session
+        if (newMsg.customer_id === currentUserId && newMsg.shop_id === shop.id) {
+          setMessages(prev => {
+            // Avoid duplicates
+            const exists = prev.some(m => m.id === newMsg.id);
+            if (exists) return prev;
+            return [...prev, newMsg];
+          });
+          setTimeout(scrollToBottom, 100);
+        }
+      }
+    },
+    onConnect: () => {
+      console.log('✅ Chat WebSocket connected');
+      if (isOpen && shop.id) {
+        joinChat(currentUserId, shop.id, product?.id);
+      }
+    },
+    onDisconnect: () => {
+      console.log('🔌 Chat WebSocket disconnected');
+    },
+    onError: (error) => {
+      console.error('❌ Chat WebSocket error:', error);
+    }
+  });
 
   useEffect(() => {
     if (isOpen && shop.id) {
       loadMessages();
       markMessagesAsRead();
+      
+      // Join chat session when WebSocket is connected
+      if (isConnected) {
+        joinChat(currentUserId, shop.id, product?.id);
+      }
     }
-  }, [isOpen, shop.id, currentUserId]);
+    
+    // Leave chat when dialog closes
+    return () => {
+      if (isOpen && shop.id && isConnected) {
+        leaveChat(currentUserId, shop.id, product?.id);
+      }
+    };
+  }, [isOpen, shop.id, currentUserId, isConnected]);
 
   useEffect(() => {
     scrollToBottom();
@@ -105,11 +162,28 @@ export const CustomerMerchantChat: React.FC<CustomerMerchantChatProps> = ({
     setNewMessage('');
     setIsSending(true);
 
+    // Create optimistic message for immediate UI feedback
+    const optimisticMessage: DirectMessage = {
+      id: `temp_${Date.now()}`,
+      customer_id: currentUserId,
+      shop_id: shop.id,
+      product_id: product?.id,
+      sender_id: currentUserId,
+      sender_type: 'customer',
+      message: messageContent,
+      is_read: false,
+      created_at: Date.now()
+    };
+
+    // Add optimistic message immediately
+    setMessages(prev => [...prev, optimisticMessage]);
+    setTimeout(scrollToBottom, 100);
+
     try {
       const messageData = {
         customer_id: currentUserId,
         shop_id: shop.id,
-        product_id: product?.id || null,
+        product_id: product?.id,
         sender_id: currentUserId,
         sender_type: 'customer' as const,
         message: messageContent
@@ -122,14 +196,24 @@ export const CustomerMerchantChat: React.FC<CustomerMerchantChatProps> = ({
       });
 
       if (response.ok) {
-        const newMsg = await response.json();
-        setMessages(prev => [...prev, newMsg]);
-        setTimeout(scrollToBottom, 100);
+        const serverMessage = await response.json();
+        
+        // Replace optimistic message with server message
+        setMessages(prev => prev.map(msg => 
+          msg.id === optimisticMessage.id ? serverMessage : msg
+        ));
+        
+        // Note: WebSocket will also broadcast this message, but our duplicate 
+        // prevention in the WebSocket handler will prevent double-adding
       } else {
         throw new Error('Failed to send message');
       }
     } catch (error) {
       console.error('Error sending message:', error);
+      
+      // Remove optimistic message on error
+      setMessages(prev => prev.filter(msg => msg.id !== optimisticMessage.id));
+      
       toast({
         title: 'Error',
         description: 'Failed to send message. Please try again.',
@@ -166,9 +250,21 @@ export const CustomerMerchantChat: React.FC<CustomerMerchantChatProps> = ({
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-md h-[600px] flex flex-col p-0">
         <DialogHeader className="p-4 border-b">
-          <DialogTitle className="flex items-center gap-2">
-            <MessageSquare className="w-5 h-5" />
-            Chat with {shop.name}
+          <DialogTitle className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <MessageSquare className="w-5 h-5" />
+              Chat with {shop.name}
+            </div>
+            
+            {/* Connection Status Indicator - Only show when connected */}
+            {isConnected && (
+              <div className="flex items-center gap-1">
+                <Wifi className="w-4 h-4 text-green-500" />
+                <Badge variant="outline" className="text-xs text-green-600 border-green-200">
+                  Live
+                </Badge>
+              </div>
+            )}
           </DialogTitle>
           {product && (
             <div className="text-sm text-gray-600 mt-1">

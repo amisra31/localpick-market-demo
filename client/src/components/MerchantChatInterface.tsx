@@ -7,7 +7,8 @@ import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { DirectMessage, Shop, Product } from '@/types';
 import { toast } from '@/hooks/use-toast';
-import { MessageSquare, Send, X, User, Store, Loader2, Search, Users, Clock } from 'lucide-react';
+import { MessageSquare, Send, X, User, Store, Loader2, Search, Users, Clock, Wifi, WifiOff } from 'lucide-react';
+import { useChatWebSocket } from '@/hooks/useChatWebSocket';
 
 interface CustomerConversation {
   customer_id: string;
@@ -35,20 +36,74 @@ export const MerchantChatInterface: React.FC<MerchantChatInterfaceProps> = ({
   const [searchTerm, setSearchTerm] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
+  // WebSocket connection for real-time messaging
+  const {
+    isConnected,
+    isConnecting,
+    connectionError,
+    joinChat,
+    leaveChat,
+    markMessageRead
+  } = useChatWebSocket({
+    enabled: true,
+    onMessage: (message) => {
+      console.log('📨 Merchant received WebSocket message:', message);
+      
+      if (message.type === 'message_received') {
+        const newMsg = message.payload;
+        
+        // Check if this message belongs to our shop
+        if (newMsg.shop_id === shop.id) {
+          // Update the conversation list
+          loadConversations();
+          
+          // If this message is for the currently selected conversation, add it
+          if (selectedConversation && newMsg.customer_id === selectedConversation.customer_id) {
+            setMessages(prev => {
+              // Avoid duplicates
+              const exists = prev.some(m => m.id === newMsg.id);
+              if (exists) return prev;
+              return [...prev, newMsg];
+            });
+            setTimeout(scrollToBottom, 100);
+          }
+        }
+      }
+    },
+    onConnect: () => {
+      console.log('✅ Merchant WebSocket connected');
+      loadConversations();
+    },
+    onDisconnect: () => {
+      console.log('🔌 Merchant WebSocket disconnected');
+    },
+    onError: (error) => {
+      console.error('❌ Merchant WebSocket error:', error);
+    }
+  });
+
   useEffect(() => {
     loadConversations();
-    
-    // Set up polling for new messages (in production, use WebSockets)
-    const interval = setInterval(loadConversations, 30000); // Poll every 30 seconds
-    return () => clearInterval(interval);
   }, [shop.id]);
 
   useEffect(() => {
     if (selectedConversation) {
       loadMessages(selectedConversation.customer_id);
       markMessagesAsRead(selectedConversation.customer_id);
+      
+      // Join the chat session for this customer
+      if (isConnected) {
+        joinChat(selectedConversation.customer_id, shop.id);
+      }
     }
-  }, [selectedConversation]);
+    
+    // Leave previous chat when conversation changes
+    return () => {
+      if (selectedConversation && isConnected) {
+        leaveChat(selectedConversation.customer_id, shop.id);
+      }
+    };
+  }, [selectedConversation, isConnected]);
 
   useEffect(() => {
     scrollToBottom();
@@ -60,45 +115,13 @@ export const MerchantChatInterface: React.FC<MerchantChatInterfaceProps> = ({
 
   const loadConversations = async () => {
     try {
-      // Get all direct messages for this shop and group by customer
-      const response = await fetch(`/api/messages?shop_id=${shop.id}`);
+      // Use the new shop direct conversations endpoint
+      const response = await fetch(`/api/shops/${shop.id}/direct-conversations`);
       if (response.ok) {
-        const allMessages: DirectMessage[] = await response.json();
-        
-        // Group messages by customer
-        const customerMap = new Map<string, CustomerConversation>();
-        
-        allMessages.forEach(message => {
-          const customerId = message.customer_id;
-          
-          if (!customerMap.has(customerId)) {
-            customerMap.set(customerId, {
-              customer_id: customerId,
-              customer_name: `Customer ${customerId.slice(-4)}`, // Fallback name
-              last_message: message,
-              unread_count: 0,
-              last_activity: message.created_at
-            });
-          }
-          
-          const conversation = customerMap.get(customerId)!;
-          
-          // Update last message if this one is newer
-          if (message.created_at > conversation.last_activity) {
-            conversation.last_message = message;
-            conversation.last_activity = message.created_at;
-          }
-          
-          // Count unread messages from customers
-          if (!message.is_read && message.sender_type === 'customer') {
-            conversation.unread_count++;
-          }
-        });
-        
-        const conversationsList = Array.from(customerMap.values())
-          .sort((a, b) => b.last_activity - a.last_activity);
-        
-        setConversations(conversationsList);
+        const conversations = await response.json();
+        setConversations(conversations);
+      } else {
+        console.error('Failed to load conversations:', response.status);
       }
     } catch (error) {
       console.error('Error loading conversations:', error);
@@ -150,6 +173,23 @@ export const MerchantChatInterface: React.FC<MerchantChatInterfaceProps> = ({
     setNewMessage('');
     setIsSending(true);
 
+    // Create optimistic message for immediate UI feedback
+    const optimisticMessage: DirectMessage = {
+      id: `temp_${Date.now()}`,
+      customer_id: selectedConversation.customer_id,
+      shop_id: shop.id,
+      product_id: undefined,
+      sender_id: merchantId,
+      sender_type: 'merchant',
+      message: messageContent,
+      is_read: false,
+      created_at: Date.now()
+    };
+
+    // Add optimistic message immediately
+    setMessages(prev => [...prev, optimisticMessage]);
+    setTimeout(scrollToBottom, 100);
+
     try {
       const messageData = {
         customer_id: selectedConversation.customer_id,
@@ -166,22 +206,28 @@ export const MerchantChatInterface: React.FC<MerchantChatInterfaceProps> = ({
       });
 
       if (response.ok) {
-        const newMsg = await response.json();
-        setMessages(prev => [...prev, newMsg]);
+        const serverMessage = await response.json();
+        
+        // Replace optimistic message with server message
+        setMessages(prev => prev.map(msg => 
+          msg.id === optimisticMessage.id ? serverMessage : msg
+        ));
         
         // Update conversation with latest message
         setConversations(prev => prev.map(conv => 
           conv.customer_id === selectedConversation.customer_id
-            ? { ...conv, last_message: newMsg, last_activity: newMsg.created_at }
+            ? { ...conv, last_message: serverMessage, last_activity: serverMessage.created_at }
             : conv
         ));
-        
-        setTimeout(scrollToBottom, 100);
       } else {
         throw new Error('Failed to send message');
       }
     } catch (error) {
       console.error('Error sending message:', error);
+      
+      // Remove optimistic message on error
+      setMessages(prev => prev.filter(msg => msg.id !== optimisticMessage.id));
+      
       toast({
         title: 'Error',
         description: 'Failed to send message. Please try again.',

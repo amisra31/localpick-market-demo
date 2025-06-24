@@ -2,8 +2,63 @@ import type { Express } from "express";
 import { eq, and, desc, not } from "drizzle-orm";
 import { db, schema } from "../db";
 import { nanoid } from "nanoid";
+import { getWebSocketManager } from "../websocket";
 
 export function registerMessageRoutes(app: Express) {
+  // Get all direct message conversations for a shop (merchant view)
+  app.get('/api/shops/:shopId/direct-conversations', async (req, res) => {
+    try {
+      const { shopId } = req.params;
+      
+      // Get all messages for this shop
+      const messages = await db.select()
+        .from(schema.direct_messages)
+        .where(eq(schema.direct_messages.shop_id, shopId))
+        .orderBy(schema.direct_messages.created_at);
+      
+      // Group by customer and get conversation summaries
+      const customerMap = new Map();
+      
+      messages.forEach(message => {
+        const customerId = message.customer_id;
+        
+        if (!customerMap.has(customerId)) {
+          customerMap.set(customerId, {
+            customer_id: customerId,
+            customer_name: `Customer ${customerId.slice(-4)}`,
+            last_message: message,
+            unread_count: 0,
+            last_activity: message.created_at,
+            total_messages: 0
+          });
+        }
+        
+        const conversation = customerMap.get(customerId);
+        conversation.total_messages++;
+        
+        // Update last message if this one is newer
+        if (message.created_at > conversation.last_activity) {
+          conversation.last_message = message;
+          conversation.last_activity = message.created_at;
+        }
+        
+        // Count unread messages from customers
+        if (!message.is_read && message.sender_type === 'customer') {
+          conversation.unread_count++;
+        }
+      });
+      
+      // Convert to array and sort by last activity
+      const conversations = Array.from(customerMap.values())
+        .sort((a, b) => b.last_activity - a.last_activity);
+      
+      res.json(conversations);
+    } catch (error) {
+      console.error('Error fetching shop conversations:', error);
+      res.status(500).json({ error: 'Failed to fetch conversations' });
+    }
+  });
+
   // Get direct conversation between customer and shop
   app.get('/api/messages', async (req, res) => {
     try {
@@ -60,6 +115,12 @@ export function registerMessageRoutes(app: Express) {
       };
       
       const [newMessage] = await db.insert(schema.direct_messages).values(messageData).returning();
+      
+      // Broadcast message to WebSocket clients in real-time
+      const wsManager = getWebSocketManager();
+      if (wsManager) {
+        wsManager.broadcastMessage(customer_id, shop_id, product_id, newMessage);
+      }
       
       res.status(201).json(newMessage);
     } catch (error) {
@@ -181,8 +242,19 @@ export function registerMessageRoutes(app: Express) {
       
       const [newMessage] = await db.insert(schema.order_messages).values(messageData).returning();
       
-      // Real-time sync: Broadcast to both merchant and customer
-      // TODO: Add WebSocket broadcasting here
+      // Real-time sync: Broadcast to both merchant and customer via WebSocket
+      const wsManager = getWebSocketManager();
+      if (wsManager) {
+        // Get order details to find customer_id and shop_id for broadcasting
+        const order = await db.select()
+          .from(schema.orders)
+          .where(eq(schema.orders.id, orderId))
+          .limit(1);
+          
+        if (order.length > 0) {
+          wsManager.broadcastMessage(order[0].customer_id, order[0].shop_id, null, newMessage);
+        }
+      }
       
       res.status(201).json(newMessage);
     } catch (error) {
