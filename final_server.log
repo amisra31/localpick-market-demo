@@ -214,3 +214,979 @@ Browserslist: browsers data (caniuse-lite) is 8 months old. Please run:
 1:17:34 AM [vite] hmr update /src/pages/AdminPortal.tsx, /src/index.css?v=MDaqDdU4-2A8ZP-CslW62
 1:18:02 AM [express] GET /api/shops 304 in 3ms :: [{"id":"shop_001","name":"Brooklyn Bites","categor…
 1:18:02 AM [express] GET /api/products 304 in 1ms :: [{"id":"prod_001","shop_id":"shop_001","name":"…
+12:22:34 PM [express] GET /api/products 200 in 22ms :: [{"id":"prod_001","shop_id":"shop_001","name":…
+12:22:34 PM [express] GET /api/shops 200 in 3ms :: [{"id":"shop_001","name":"Brooklyn Bites","categor…
+12:22:34 PM [express] GET /api/shops 304 in 3ms :: [{"id":"shop_001","name":"Brooklyn Bites","categor…
+12:22:34 PM [express] GET /api/placeholder/300/200 200 in 41ms
+12:23:01 PM [express] GET /api/products/DdWu1Lbmnur-8Cv45J3Ry 200 in 66ms :: {"id":"DdWu1Lbmnur-8Cv45…
+12:23:01 PM [express] GET /api/shops/BC6Xve8NLULk7PzPWHKZI 200 in 2ms :: {"id":"BC6Xve8NLULk7PzPWHKZI…
+12:23:08 PM [express] GET /api/shops 304 in 33ms :: [{"id":"shop_001","name":"Brooklyn Bites","catego…
+12:23:08 PM [express] GET /api/products 304 in 6ms :: [{"id":"prod_001","shop_id":"shop_001","name":"…
+12:23:08 PM [express] GET /api/shops 304 in 5ms :: [{"id":"shop_001","name":"Brooklyn Bites","categor…
+12:23:08 PM [express] GET /api/placeholder/300/200 200 in 128ms
+12:23:12 PM [express] GET /api/products/_wuJMJnSlzH3RKSVdeZhv 200 in 9ms :: {"id":"_wuJMJnSlzH3RKSVde…
+12:23:12 PM [express] GET /api/shops/bXcZL5vLMvmBJ4E8I0mSa 200 in 1ms :: {"id":"bXcZL5vLMvmBJ4E8I0mSa…
+12:23:16 PM [express] GET /api/products 304 in 9ms :: [{"id":"prod_001","shop_id":"shop_001","name":"…
+12:23:16 PM [express] GET /api/shops 304 in 28ms :: [{"id":"shop_001","name":"Brooklyn Bites","catego…
+12:23:16 PM [express] GET /api/shops 304 in 1ms :: [{"id":"shop_001","name":"Brooklyn Bites","categor…
+12:23:16 PM [express] GET /api/placeholder/300/200 200 in 46ms
+12:23:18 PM [express] GET /api/products/prod_001 304 in 4ms :: {"id":"prod_001","shop_id":"shop_001",…
+12:23:18 PM [express] GET /api/shops/shop_001 304 in 6ms :: {"id":"shop_001","name":"Brooklyn Bites",…
+12:23:18 PM [express] GET /api/placeholder/300/200 200 in 9ms
+12:23:20 PM [express] GET /api/products 304 in 79ms :: [{"id":"prod_001","shop_id":"shop_001","name":…
+12:23:20 PM [express] GET /api/shops 304 in 6ms :: [{"id":"shop_001","name":"Brooklyn Bites","categor…
+12:23:20 PM [express] GET /api/shops 304 in 61ms :: [{"id":"shop_001","name":"Brooklyn Bites","catego…
+12:23:20 PM [express] GET /api/placeholder/300/200 200 in 60ms
+12:23:23 PM [express] GET /api/products/_nvmeKhqrPfsuXLUkHpiV 200 in 6ms :: {"id":"_nvmeKhqrPfsuXLUkH…
+12:23:23 PM [express] GET /api/shops/7Z9ZHhuOQxlPVEEzjEkCm 200 in 4ms :: {"id":"7Z9ZHhuOQxlPVEEzjEkCm…
+12:23:26 PM [express] GET /api/shops 304 in 9ms :: [{"id":"shop_001","name":"Brooklyn Bites","categor…
+12:23:26 PM [express] GET /api/products 304 in 4ms :: [{"id":"prod_001","shop_id":"shop_001","name":"…
+12:23:26 PM [express] GET /api/shops 304 in 5ms :: [{"id":"shop_001","name":"Brooklyn Bites","categor…
+12:23:26 PM [express] GET /api/placeholder/300/200 200 in 27ms
+12:23:54 PM [express] GET /api/products 200 in 244ms :: [{"id":"prod_001","shop_id":"shop_001","name"…
+12:23:54 PM [express] GET /api/shops 200 in 7ms :: [{"id":"shop_001","name":"Brooklyn Bites","categor…
+12:23:54 PM [express] GET /api/shops 200 in 4ms :: [{"id":"shop_001","name":"Brooklyn Bites","categor…
+12:23:54 PM [express] GET /api/shops 200 in 7ms :: [{"id":"shop_001","name":"Brooklyn Bites","categor…
+12:23:55 PM [express] GET /api/products 200 in 2ms :: [{"id":"prod_001","shop_id":"shop_001","name":"…
+12:24:11 PM [express] GET /api/products 304 in 61ms :: [{"id":"prod_001","shop_id":"shop_001","name":…
+12:24:11 PM [express] GET /api/shops 304 in 4ms :: [{"id":"shop_001","name":"Brooklyn Bites","categor…
+12:24:11 PM [express] GET /api/shops 200 in 5ms :: [{"id":"shop_001","name":"Brooklyn Bites","categor…
+12:24:11 PM [express] GET /api/placeholder/300/200 200 in 55ms
+12:24:18 PM [express] GET /api/products/prod_001 200 in 32ms :: {"id":"prod_001","shop_id":"shop_001"…
+12:24:18 PM [express] GET /api/shops/shop_001 200 in 1ms :: {"id":"shop_001","name":"Brooklyn Bites",…
+New WebSocket connection: client_1750834458937_eo3aqe8yg
+Received message from client_1750834458937_eo3aqe8yg: auth
+Authenticated client_1750834458937_eo3aqe8yg as customer 1
+12:24:18 PM [express] GET /api/placeholder/300/200 200 in 89ms
+WebSocket connection closed: client_1750834458937_eo3aqe8yg
+12:24:21 PM [express] GET /api/products 304 in 10ms :: [{"id":"prod_001","shop_id":"shop_001","name":…
+12:24:21 PM [express] GET /api/shops 304 in 3ms :: [{"id":"shop_001","name":"Brooklyn Bites","categor…
+12:24:21 PM [express] GET /api/shops 304 in 1ms :: [{"id":"shop_001","name":"Brooklyn Bites","categor…
+12:24:21 PM [express] GET /api/placeholder/300/200 200 in 27ms
+12:24:23 PM [express] GET /api/products/prod_002 200 in 20ms :: {"id":"prod_002","shop_id":"shop_001"…
+12:24:23 PM [express] GET /api/shops/shop_001 304 in 1ms :: {"id":"shop_001","name":"Brooklyn Bites",…
+New WebSocket connection: client_1750834463067_b6rl3lsft
+12:24:23 PM [express] GET /api/placeholder/300/200 200 in 7ms
+Received message from client_1750834463067_b6rl3lsft: auth
+Authenticated client_1750834463067_b6rl3lsft as customer 1
+WebSocket connection closed: client_1750834463067_b6rl3lsft
+12:24:27 PM [express] GET /api/orders 200 in 32ms
+12:24:30 PM [express] GET /api/products 304 in 14ms :: [{"id":"prod_001","shop_id":"shop_001","name":…
+12:24:30 PM [express] GET /api/shops 304 in 1ms :: [{"id":"shop_001","name":"Brooklyn Bites","categor…
+12:24:30 PM [express] GET /api/shops 304 in 1ms :: [{"id":"shop_001","name":"Brooklyn Bites","categor…
+12:24:30 PM [express] GET /api/placeholder/300/200 200 in 43ms
+3:47:44 PM [express] GET /api/products 304 in 31ms :: [{"id":"prod_001","shop_id":"shop_001","name":…
+3:47:44 PM [express] GET /api/shops 200 in 1ms :: [{"id":"shop_001","name":"Brooklyn Bites","categor…
+3:47:44 PM [express] GET /api/shops 304 in 0ms :: [{"id":"shop_001","name":"Brooklyn Bites","categor…
+3:47:44 PM [express] GET /api/placeholder/300/200 200 in 4ms
+3:47:57 PM [express] GET /api/shops 304 in 4ms :: [{"id":"shop_001","name":"Brooklyn Bites","categor…
+3:47:57 PM [express] GET /api/products 304 in 1ms :: [{"id":"prod_001","shop_id":"shop_001","name":"…
+3:52:15 PM [vite] hmr update /src/components/AdminBulkUpload.tsx, /src/index.css?v=MDaqDdU4-2A8ZP-CslW62
+3:52:27 PM [vite] hmr update /src/components/AdminBulkUpload.tsx, /src/index.css?v=MDaqDdU4-2A8ZP-CslW62
+3:53:24 PM [express] GET /api/shops 304 in 1ms :: [{"id":"shop_001","name":"Brooklyn Bites","categor…
+3:53:24 PM [express] GET /api/products 304 in 1ms :: [{"id":"prod_001","shop_id":"shop_001","name":"…
+🔄 Bulk upload request received
+📦 Request body: {
+  "shops": [
+    {
+      "shop_name": "Sticks Coffee",
+      "shop_category": "Coffee shop",
+      "location": "4993 7th St, Mariposa, CA 95338, United States",
+      "hours": "Tue-Fri: 7AM-2PM, Sun-Mon: Closed",
+      "about_shop": "Cozy neighborhood cafe serving fresh coffee",
+      "errors": [],
+      "isNew": true
+    },
+    {
+      "shop_name": "Cinnamon Roll Bakery & Café",
+      "shop_category": "Coffee shop",
+      "location": "5009 5th St, Mariposa, CA 95338, United States",
+      "phone": "+15596762815",
+      "hours": "Mon-Sun: 8AM-4PM",
+      "about_shop": "Cozy neighborhood cafe serving fresh coffee",
+      "errors": [],
+      "isNew": true
+    },
+    {
+      "shop_name": "The Mariposa Marketplace",
+      "shop_category": "Gift shop",
+      "location": "5024 B CA-140, Mariposa, CA 95338, United States",
+      "phone": "+12099667377",
+      "hours": "Mon-Sun: 10AM-6PM",
+      "website": "https://mariposamarketplace.net/",
+      "errors": [],
+      "isNew": true
+    },
+    {
+      "shop_name": "Yosemite Gifts",
+      "shop_category": "Gift shop",
+      "location": "5023 CA-140, Mariposa, CA 95338, United States",
+      "phone": "+12099664343",
+      "hours": "Mon-Fri: 11AM-5PM Sat: 10:30AM-5:30PM Sun: 11:30AM-5PM",
+      "errors": [],
+      "isNew": true
+    }
+  ],
+  "products": [
+    {
+      "shop_id": "sticks_coffee",
+      "product_name": "Fruit + Ricotta",
+      "price": 7,
+      "description": "strawberry-rhubarb compote, mint",
+      "image_url": "https://drive.google.com/file/d/1kHx0cdqmXthnu924wdcjtyhsuiDZKJDq/view?usp=drive_link",
+      "errors": [],
+      "isNew": true
+    },
+    {
+      "shop_id": "sticks_coffee",
+      "product_name": "Egg + Avocado",
+      "price": 7.5,
+      "description": "with everything seasoning",
+      "image_url": "https://drive.google.com/file/d/1e23jEf8L4gKydlipt9dNQf9WhWL1i_eb/view?usp=drive_link",
+      "errors": [],
+      "isNew": true
+    },
+    {
+      "shop_id": "sticks_coffee",
+      "product_name": "Lox",
+      "price": 11,
+      "description": "dill cream cheese, pickled red onion, capers, fresh dill",
+      "image_url": "https://drive.google.com/file/d/1ZltbDly7mloqLcMtj-CNo3PGSAjYAaE0/view?usp=drive_link",
+      "errors": [],
+      "isNew": true
+    },
+    {
+      "shop_id": "sticks_coffee",
+      "product_name": "Ricotta + Egg",
+      "price": 8.5,
+      "description": "herby green sauce, fresh herbs",
+      "image_url": "https://drive.google.com/file/d/1JCaB4GCzFzqfAClx5kg6g08L5ppYstKT/view?usp=drive_link",
+      "errors": [],
+      "isNew": true
+    },
+    {
+      "shop_id": "sticks_coffee",
+      "product_name": "Burrata",
+      "price": 11,
+      "description": "heirloom tomato, stone fruit, pickled corn, pesto",
+      "image_url": "https://drive.google.com/file/d/1r6GzBIewe65q62BFiNLPuLagRurGijjY/view?usp=drive_link",
+      "errors": [],
+      "isNew": true
+    },
+    {
+      "shop_id": "sticks_coffee",
+      "product_name": "Granola",
+      "price": 9,
+      "description": "pecans, coconut, pepitas, with plain European-style yogurt and seasonal fruit",
+      "image_url": "https://drive.google.com/file/d/19Hb8V0_vUhRrSDIybY06WNWOgyvJunIy/view?usp=drive_link",
+      "errors": [],
+      "isNew": true
+    },
+    {
+      "shop_id": "sticks_coffee",
+      "product_name": "Breakfast Sammie",
+      "price": 9.5,
+      "description": "focaccia, avocado, medium boiled egg, herby green sauce, bacon, pickled peppers (grilled on sourdough with cheddar $11)",
+      "image_url": "https://drive.google.com/file/d/1I_K2W4S1bVPFPyCYpcGOJPqNJFa7NTJV/view?usp=drive_link",
+      "errors": [],
+      "isNew": true
+    },
+    {
+      "shop_id": "sticks_coffee",
+      "product_name": "Quinoa + Greens",
+      "price": 13,
+      "description": "chickpeas, feta, cucumber, scallions, pistachios, sesame seeds, sumac, fresh herbs, tahini dressing (add medium boiled egg $1.5, add za’atar chicken $3)",
+      "image_url": "https://drive.google.com/file/d/13I1piTuqPLmlRIgaS-VYcFx9dj3hp3q-/view?usp=drive_link",
+      "errors": [],
+      "isNew": true
+    },
+    {
+      "shop_id": "sticks_coffee",
+      "product_name": "Sticks Blue Salad",
+      "price": 15.5,
+      "description": "mixed greens, blue cheese, pickled red onions, cucumber, roasted chickpea, boiled egg, toasted walnuts, apple cider vinaigrette",
+      "image_url": "https://drive.google.com/file/d/1lgdGx8KMh6SAjmlGSNQb70yrcnTRncJM/view?usp=drive_link",
+      "errors": [],
+      "isNew": true
+    },
+    {
+      "shop_id": "sticks_coffee",
+      "product_name": "Bacon + Beet Sandwich",
+      "price": 13.5,
+      "description": "sourdough, bacon, herby chèvre, beets, mixed greens, balsamic aioli (vegetarian option: substitute avocado + cucumber for bacon $13.5, vegan option $13)",
+      "image_url": "https://drive.google.com/file/d/1wYoycLTLOLh4sSMF15q6GVRdu07AetbP/view?usp=drive_link",
+      "errors": [],
+      "isNew": true
+    },
+    {
+      "shop_id": "sticks_coffee",
+      "product_name": "Za’atar Chicken Sandwich",
+      "price": 13.5,
+      "description": "focaccia, harissa aioli, herby green sauce, feta, pickled cucumbers, mixed greens",
+      "image_url": "https://drive.google.com/file/d/1hN-qdFHQgISf550AVw6ZLWgaRLxN5rCu/view?usp=drive_link",
+      "errors": [],
+      "isNew": true
+    },
+    {
+      "shop_id": "sticks_coffee",
+      "product_name": "Classic Tuna Sandwich",
+      "price": 12.5,
+      "description": "sourdough, mixed greens, pickled peppers",
+      "image_url": "https://drive.google.com/file/d/1WInGvUFm2ZB177hQatgBmlhEjl5SUh_Q/view?usp=drive_link",
+      "errors": [],
+      "isNew": true
+    }
+  ]
+}
+✅ Processing 4 shops and 12 products
+🔄 Starting bulk operations
+🏪 Processing shop: Sticks Coffee
+🏪 Shop object to insert: {
+  "id": "E0ImL1iqpcXeqQvepNE8c",
+  "name": "Sticks Coffee",
+  "category": "Coffee shop",
+  "location": "4993 7th St, Mariposa, CA 95338, United States",
+  "phone": null,
+  "hours": "Tue-Fri: 7AM-2PM, Sun-Mon: Closed",
+  "business_email": null,
+  "website": null,
+  "social_links": null,
+  "about_shop": "Cozy neighborhood cafe serving fresh coffee",
+  "shop_photo": null,
+  "status": "approved",
+  "owner_id": "QAW2e5IHgtZ0a4ioLC8Ua",
+  "submitted_at": 1750847027263,
+  "approved_at": 1750847027263,
+  "rejected_at": null,
+  "rejection_reason": null,
+  "created_at": 1750847027263,
+  "updated_at": 1750847027263
+}
+✅ Shop created successfully: Sticks Coffee
+🏪 Processing shop: Cinnamon Roll Bakery & Café
+🏪 Shop object to insert: {
+  "id": "uawKFETCXLjQPjINRkvqM",
+  "name": "Cinnamon Roll Bakery & Café",
+  "category": "Coffee shop",
+  "location": "5009 5th St, Mariposa, CA 95338, United States",
+  "phone": "+15596762815",
+  "hours": "Mon-Sun: 8AM-4PM",
+  "business_email": null,
+  "website": null,
+  "social_links": null,
+  "about_shop": "Cozy neighborhood cafe serving fresh coffee",
+  "shop_photo": null,
+  "status": "approved",
+  "owner_id": "e1oR72dlTo3ueVpdeeoWZ",
+  "submitted_at": 1750847027270,
+  "approved_at": 1750847027270,
+  "rejected_at": null,
+  "rejection_reason": null,
+  "created_at": 1750847027270,
+  "updated_at": 1750847027270
+}
+✅ Shop created successfully: Cinnamon Roll Bakery & Café
+🏪 Processing shop: The Mariposa Marketplace
+🏪 Shop object to insert: {
+  "id": "BByngmaE_569eC_jxc6d6",
+  "name": "The Mariposa Marketplace",
+  "category": "Gift shop",
+  "location": "5024 B CA-140, Mariposa, CA 95338, United States",
+  "phone": "+12099667377",
+  "hours": "Mon-Sun: 10AM-6PM",
+  "business_email": null,
+  "website": "https://mariposamarketplace.net/",
+  "social_links": null,
+  "about_shop": null,
+  "shop_photo": null,
+  "status": "approved",
+  "owner_id": "DG9S3SBDnwdv__xQ-atAe",
+  "submitted_at": 1750847027273,
+  "approved_at": 1750847027273,
+  "rejected_at": null,
+  "rejection_reason": null,
+  "created_at": 1750847027273,
+  "updated_at": 1750847027273
+}
+✅ Shop created successfully: The Mariposa Marketplace
+🏪 Processing shop: Yosemite Gifts
+🏪 Shop object to insert: {
+  "id": "_kGDQ0sN-x8cAGUPTDvgc",
+  "name": "Yosemite Gifts",
+  "category": "Gift shop",
+  "location": "5023 CA-140, Mariposa, CA 95338, United States",
+  "phone": "+12099664343",
+  "hours": "Mon-Fri: 11AM-5PM Sat: 10:30AM-5:30PM Sun: 11:30AM-5PM",
+  "business_email": null,
+  "website": null,
+  "social_links": null,
+  "about_shop": null,
+  "shop_photo": null,
+  "status": "approved",
+  "owner_id": "gOvCEA4C71IbfvuFjiXTY",
+  "submitted_at": 1750847027275,
+  "approved_at": 1750847027275,
+  "rejected_at": null,
+  "rejection_reason": null,
+  "created_at": 1750847027275,
+  "updated_at": 1750847027275
+}
+✅ Shop created successfully: Yosemite Gifts
+📦 Processing product: Fruit + Ricotta
+📦 Product object to insert: {
+  "id": "qCNxWr2zDktwHIvJxA4qA",
+  "shop_id": "E0ImL1iqpcXeqQvepNE8c",
+  "name": "Fruit + Ricotta",
+  "image": "https://drive.google.com/file/d/1kHx0cdqmXthnu924wdcjtyhsuiDZKJDq/view?usp=drive_link",
+  "price": 7,
+  "description": "strawberry-rhubarb compote, mint",
+  "stock": null,
+  "is_archived": false,
+  "created_at": 1750847027276,
+  "updated_at": 1750847027276
+}
+❌ Error in bulk upload: SqliteError: NOT NULL constraint failed: products.stock
+    at PreparedQuery.values (/Users/amitesh/work/localpickup/localpick-market-demo/node_modules/src/better-sqlite3/session.ts:156:26)
+    at PreparedQuery.all (/Users/amitesh/work/localpickup/localpick-market-demo/node_modules/src/better-sqlite3/session.ts:124:21)
+    at QueryPromise.all (/Users/amitesh/work/localpickup/localpick-market-demo/node_modules/src/sqlite-core/query-builders/insert.ts:396:26)
+    at QueryPromise.execute (/Users/amitesh/work/localpickup/localpick-market-demo/node_modules/src/sqlite-core/query-builders/insert.ts:408:40)
+    at QueryPromise.then (/Users/amitesh/work/localpickup/localpick-market-demo/node_modules/src/query-promise.ts:31:15)
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5) {
+  code: 'SQLITE_CONSTRAINT_NOTNULL'
+}
+❌ Error stack: SqliteError: NOT NULL constraint failed: products.stock
+    at PreparedQuery.values (/Users/amitesh/work/localpickup/localpick-market-demo/node_modules/src/better-sqlite3/session.ts:156:26)
+    at PreparedQuery.all (/Users/amitesh/work/localpickup/localpick-market-demo/node_modules/src/better-sqlite3/session.ts:124:21)
+    at QueryPromise.all (/Users/amitesh/work/localpickup/localpick-market-demo/node_modules/src/sqlite-core/query-builders/insert.ts:396:26)
+    at QueryPromise.execute (/Users/amitesh/work/localpickup/localpick-market-demo/node_modules/src/sqlite-core/query-builders/insert.ts:408:40)
+    at QueryPromise.then (/Users/amitesh/work/localpickup/localpick-market-demo/node_modules/src/query-promise.ts:31:15)
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+3:53:47 PM [express] POST /api/shops/bulk-upload 500 in 24ms :: {"error":"Failed to upload shops and…
+🔄 Bulk upload request received
+📦 Request body: {
+  "shops": [
+    {
+      "shop_name": "Sticks Coffee",
+      "shop_category": "Coffee shop",
+      "location": "4993 7th St, Mariposa, CA 95338, United States",
+      "hours": "Tue-Fri: 7AM-2PM, Sun-Mon: Closed",
+      "about_shop": "Cozy neighborhood cafe serving fresh coffee",
+      "errors": [],
+      "isNew": true
+    },
+    {
+      "shop_name": "Cinnamon Roll Bakery & Café",
+      "shop_category": "Coffee shop",
+      "location": "5009 5th St, Mariposa, CA 95338, United States",
+      "phone": "+15596762815",
+      "hours": "Mon-Sun: 8AM-4PM",
+      "about_shop": "Cozy neighborhood cafe serving fresh coffee",
+      "errors": [],
+      "isNew": true
+    },
+    {
+      "shop_name": "The Mariposa Marketplace",
+      "shop_category": "Gift shop",
+      "location": "5024 B CA-140, Mariposa, CA 95338, United States",
+      "phone": "+12099667377",
+      "hours": "Mon-Sun: 10AM-6PM",
+      "website": "https://mariposamarketplace.net/",
+      "errors": [],
+      "isNew": true
+    },
+    {
+      "shop_name": "Yosemite Gifts",
+      "shop_category": "Gift shop",
+      "location": "5023 CA-140, Mariposa, CA 95338, United States",
+      "phone": "+12099664343",
+      "hours": "Mon-Fri: 11AM-5PM Sat: 10:30AM-5:30PM Sun: 11:30AM-5PM",
+      "errors": [],
+      "isNew": true
+    }
+  ],
+  "products": [
+    {
+      "shop_id": "sticks_coffee",
+      "product_name": "Fruit + Ricotta",
+      "price": 7,
+      "description": "strawberry-rhubarb compote, mint",
+      "image_url": "https://drive.google.com/file/d/1kHx0cdqmXthnu924wdcjtyhsuiDZKJDq/view?usp=drive_link",
+      "errors": [],
+      "isNew": true
+    },
+    {
+      "shop_id": "sticks_coffee",
+      "product_name": "Egg + Avocado",
+      "price": 7.5,
+      "description": "with everything seasoning",
+      "image_url": "https://drive.google.com/file/d/1e23jEf8L4gKydlipt9dNQf9WhWL1i_eb/view?usp=drive_link",
+      "errors": [],
+      "isNew": true
+    },
+    {
+      "shop_id": "sticks_coffee",
+      "product_name": "Lox",
+      "price": 11,
+      "description": "dill cream cheese, pickled red onion, capers, fresh dill",
+      "image_url": "https://drive.google.com/file/d/1ZltbDly7mloqLcMtj-CNo3PGSAjYAaE0/view?usp=drive_link",
+      "errors": [],
+      "isNew": true
+    },
+    {
+      "shop_id": "sticks_coffee",
+      "product_name": "Ricotta + Egg",
+      "price": 8.5,
+      "description": "herby green sauce, fresh herbs",
+      "image_url": "https://drive.google.com/file/d/1JCaB4GCzFzqfAClx5kg6g08L5ppYstKT/view?usp=drive_link",
+      "errors": [],
+      "isNew": true
+    },
+    {
+      "shop_id": "sticks_coffee",
+      "product_name": "Burrata",
+      "price": 11,
+      "description": "heirloom tomato, stone fruit, pickled corn, pesto",
+      "image_url": "https://drive.google.com/file/d/1r6GzBIewe65q62BFiNLPuLagRurGijjY/view?usp=drive_link",
+      "errors": [],
+      "isNew": true
+    },
+    {
+      "shop_id": "sticks_coffee",
+      "product_name": "Granola",
+      "price": 9,
+      "description": "pecans, coconut, pepitas, with plain European-style yogurt and seasonal fruit",
+      "image_url": "https://drive.google.com/file/d/19Hb8V0_vUhRrSDIybY06WNWOgyvJunIy/view?usp=drive_link",
+      "errors": [],
+      "isNew": true
+    },
+    {
+      "shop_id": "sticks_coffee",
+      "product_name": "Breakfast Sammie",
+      "price": 9.5,
+      "description": "focaccia, avocado, medium boiled egg, herby green sauce, bacon, pickled peppers (grilled on sourdough with cheddar $11)",
+      "image_url": "https://drive.google.com/file/d/1I_K2W4S1bVPFPyCYpcGOJPqNJFa7NTJV/view?usp=drive_link",
+      "errors": [],
+      "isNew": true
+    },
+    {
+      "shop_id": "sticks_coffee",
+      "product_name": "Quinoa + Greens",
+      "price": 13,
+      "description": "chickpeas, feta, cucumber, scallions, pistachios, sesame seeds, sumac, fresh herbs, tahini dressing (add medium boiled egg $1.5, add za’atar chicken $3)",
+      "image_url": "https://drive.google.com/file/d/13I1piTuqPLmlRIgaS-VYcFx9dj3hp3q-/view?usp=drive_link",
+      "errors": [],
+      "isNew": true
+    },
+    {
+      "shop_id": "sticks_coffee",
+      "product_name": "Sticks Blue Salad",
+      "price": 15.5,
+      "description": "mixed greens, blue cheese, pickled red onions, cucumber, roasted chickpea, boiled egg, toasted walnuts, apple cider vinaigrette",
+      "image_url": "https://drive.google.com/file/d/1lgdGx8KMh6SAjmlGSNQb70yrcnTRncJM/view?usp=drive_link",
+      "errors": [],
+      "isNew": true
+    },
+    {
+      "shop_id": "sticks_coffee",
+      "product_name": "Bacon + Beet Sandwich",
+      "price": 13.5,
+      "description": "sourdough, bacon, herby chèvre, beets, mixed greens, balsamic aioli (vegetarian option: substitute avocado + cucumber for bacon $13.5, vegan option $13)",
+      "image_url": "https://drive.google.com/file/d/1wYoycLTLOLh4sSMF15q6GVRdu07AetbP/view?usp=drive_link",
+      "errors": [],
+      "isNew": true
+    },
+    {
+      "shop_id": "sticks_coffee",
+      "product_name": "Za’atar Chicken Sandwich",
+      "price": 13.5,
+      "description": "focaccia, harissa aioli, herby green sauce, feta, pickled cucumbers, mixed greens",
+      "image_url": "https://drive.google.com/file/d/1hN-qdFHQgISf550AVw6ZLWgaRLxN5rCu/view?usp=drive_link",
+      "errors": [],
+      "isNew": true
+    },
+    {
+      "shop_id": "sticks_coffee",
+      "product_name": "Classic Tuna Sandwich",
+      "price": 12.5,
+      "description": "sourdough, mixed greens, pickled peppers",
+      "image_url": "https://drive.google.com/file/d/1WInGvUFm2ZB177hQatgBmlhEjl5SUh_Q/view?usp=drive_link",
+      "errors": [],
+      "isNew": true
+    }
+  ]
+}
+✅ Processing 4 shops and 12 products
+🔄 Starting bulk operations
+🏪 Processing shop: Sticks Coffee
+🏪 Shop object to insert: {
+  "id": "R7IJw9k2NTapKMoLX3c0B",
+  "name": "Sticks Coffee",
+  "category": "Coffee shop",
+  "location": "4993 7th St, Mariposa, CA 95338, United States",
+  "phone": null,
+  "hours": "Tue-Fri: 7AM-2PM, Sun-Mon: Closed",
+  "business_email": null,
+  "website": null,
+  "social_links": null,
+  "about_shop": "Cozy neighborhood cafe serving fresh coffee",
+  "shop_photo": null,
+  "status": "approved",
+  "owner_id": "Rzsyw8KYOhwsQtO1-XEUT",
+  "submitted_at": 1750847031635,
+  "approved_at": 1750847031635,
+  "rejected_at": null,
+  "rejection_reason": null,
+  "created_at": 1750847031635,
+  "updated_at": 1750847031635
+}
+✅ Shop created successfully: Sticks Coffee
+🏪 Processing shop: Cinnamon Roll Bakery & Café
+🏪 Shop object to insert: {
+  "id": "nPcya6OS72uNyPubDIpQJ",
+  "name": "Cinnamon Roll Bakery & Café",
+  "category": "Coffee shop",
+  "location": "5009 5th St, Mariposa, CA 95338, United States",
+  "phone": "+15596762815",
+  "hours": "Mon-Sun: 8AM-4PM",
+  "business_email": null,
+  "website": null,
+  "social_links": null,
+  "about_shop": "Cozy neighborhood cafe serving fresh coffee",
+  "shop_photo": null,
+  "status": "approved",
+  "owner_id": "ELR_yvb68M5eTjaYApg_n",
+  "submitted_at": 1750847031639,
+  "approved_at": 1750847031639,
+  "rejected_at": null,
+  "rejection_reason": null,
+  "created_at": 1750847031639,
+  "updated_at": 1750847031639
+}
+✅ Shop created successfully: Cinnamon Roll Bakery & Café
+🏪 Processing shop: The Mariposa Marketplace
+🏪 Shop object to insert: {
+  "id": "CQlR_DpBWIOycOxBtgHbm",
+  "name": "The Mariposa Marketplace",
+  "category": "Gift shop",
+  "location": "5024 B CA-140, Mariposa, CA 95338, United States",
+  "phone": "+12099667377",
+  "hours": "Mon-Sun: 10AM-6PM",
+  "business_email": null,
+  "website": "https://mariposamarketplace.net/",
+  "social_links": null,
+  "about_shop": null,
+  "shop_photo": null,
+  "status": "approved",
+  "owner_id": "D0ev28AKyRw23Dk2egizF",
+  "submitted_at": 1750847031643,
+  "approved_at": 1750847031643,
+  "rejected_at": null,
+  "rejection_reason": null,
+  "created_at": 1750847031643,
+  "updated_at": 1750847031643
+}
+✅ Shop created successfully: The Mariposa Marketplace
+🏪 Processing shop: Yosemite Gifts
+🏪 Shop object to insert: {
+  "id": "eVBe0YYzVsiXn7I4q8N4o",
+  "name": "Yosemite Gifts",
+  "category": "Gift shop",
+  "location": "5023 CA-140, Mariposa, CA 95338, United States",
+  "phone": "+12099664343",
+  "hours": "Mon-Fri: 11AM-5PM Sat: 10:30AM-5:30PM Sun: 11:30AM-5PM",
+  "business_email": null,
+  "website": null,
+  "social_links": null,
+  "about_shop": null,
+  "shop_photo": null,
+  "status": "approved",
+  "owner_id": "UJC0juff9bq1Vlh-yTYy8",
+  "submitted_at": 1750847031646,
+  "approved_at": 1750847031646,
+  "rejected_at": null,
+  "rejection_reason": null,
+  "created_at": 1750847031646,
+  "updated_at": 1750847031646
+}
+✅ Shop created successfully: Yosemite Gifts
+📦 Processing product: Fruit + Ricotta
+📦 Product object to insert: {
+  "id": "DzgSBAjfLbPApWCyNa9Ge",
+  "shop_id": "R7IJw9k2NTapKMoLX3c0B",
+  "name": "Fruit + Ricotta",
+  "image": "https://drive.google.com/file/d/1kHx0cdqmXthnu924wdcjtyhsuiDZKJDq/view?usp=drive_link",
+  "price": 7,
+  "description": "strawberry-rhubarb compote, mint",
+  "stock": null,
+  "is_archived": false,
+  "created_at": 1750847031650,
+  "updated_at": 1750847031650
+}
+❌ Error in bulk upload: SqliteError: NOT NULL constraint failed: products.stock
+    at PreparedQuery.values (/Users/amitesh/work/localpickup/localpick-market-demo/node_modules/src/better-sqlite3/session.ts:156:26)
+    at PreparedQuery.all (/Users/amitesh/work/localpickup/localpick-market-demo/node_modules/src/better-sqlite3/session.ts:124:21)
+    at QueryPromise.all (/Users/amitesh/work/localpickup/localpick-market-demo/node_modules/src/sqlite-core/query-builders/insert.ts:396:26)
+    at QueryPromise.execute (/Users/amitesh/work/localpickup/localpick-market-demo/node_modules/src/sqlite-core/query-builders/insert.ts:408:40)
+    at QueryPromise.then (/Users/amitesh/work/localpickup/localpick-market-demo/node_modules/src/query-promise.ts:31:15)
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5) {
+  code: 'SQLITE_CONSTRAINT_NOTNULL'
+}
+❌ Error stack: SqliteError: NOT NULL constraint failed: products.stock
+    at PreparedQuery.values (/Users/amitesh/work/localpickup/localpick-market-demo/node_modules/src/better-sqlite3/session.ts:156:26)
+    at PreparedQuery.all (/Users/amitesh/work/localpickup/localpick-market-demo/node_modules/src/better-sqlite3/session.ts:124:21)
+    at QueryPromise.all (/Users/amitesh/work/localpickup/localpick-market-demo/node_modules/src/sqlite-core/query-builders/insert.ts:396:26)
+    at QueryPromise.execute (/Users/amitesh/work/localpickup/localpick-market-demo/node_modules/src/sqlite-core/query-builders/insert.ts:408:40)
+    at QueryPromise.then (/Users/amitesh/work/localpickup/localpick-market-demo/node_modules/src/query-promise.ts:31:15)
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+3:53:51 PM [express] POST /api/shops/bulk-upload 500 in 22ms :: {"error":"Failed to upload shops and…
+🔄 Bulk upload request received
+📦 Request body: {
+  "shops": [
+    {
+      "shop_name": "Sticks Coffee",
+      "shop_category": "Coffee shop",
+      "location": "4993 7th St, Mariposa, CA 95338, United States",
+      "hours": "Tue-Fri: 7AM-2PM, Sun-Mon: Closed",
+      "about_shop": "Cozy neighborhood cafe serving fresh coffee",
+      "errors": [],
+      "isNew": true
+    },
+    {
+      "shop_name": "Cinnamon Roll Bakery & Café",
+      "shop_category": "Coffee shop",
+      "location": "5009 5th St, Mariposa, CA 95338, United States",
+      "phone": "+15596762815",
+      "hours": "Mon-Sun: 8AM-4PM",
+      "about_shop": "Cozy neighborhood cafe serving fresh coffee",
+      "errors": [],
+      "isNew": true
+    },
+    {
+      "shop_name": "The Mariposa Marketplace",
+      "shop_category": "Gift shop",
+      "location": "5024 B CA-140, Mariposa, CA 95338, United States",
+      "phone": "+12099667377",
+      "hours": "Mon-Sun: 10AM-6PM",
+      "website": "https://mariposamarketplace.net/",
+      "errors": [],
+      "isNew": true
+    },
+    {
+      "shop_name": "Yosemite Gifts",
+      "shop_category": "Gift shop",
+      "location": "5023 CA-140, Mariposa, CA 95338, United States",
+      "phone": "+12099664343",
+      "hours": "Mon-Fri: 11AM-5PM Sat: 10:30AM-5:30PM Sun: 11:30AM-5PM",
+      "errors": [],
+      "isNew": true
+    }
+  ],
+  "products": [
+    {
+      "shop_id": "sticks_coffee",
+      "product_name": "Fruit + Ricotta",
+      "price": 7,
+      "description": "strawberry-rhubarb compote, mint",
+      "image_url": "https://drive.google.com/file/d/1kHx0cdqmXthnu924wdcjtyhsuiDZKJDq/view?usp=drive_link",
+      "errors": [],
+      "isNew": true
+    },
+    {
+      "shop_id": "sticks_coffee",
+      "product_name": "Egg + Avocado",
+      "price": 7.5,
+      "description": "with everything seasoning",
+      "image_url": "https://drive.google.com/file/d/1e23jEf8L4gKydlipt9dNQf9WhWL1i_eb/view?usp=drive_link",
+      "errors": [],
+      "isNew": true
+    },
+    {
+      "shop_id": "sticks_coffee",
+      "product_name": "Lox",
+      "price": 11,
+      "description": "dill cream cheese, pickled red onion, capers, fresh dill",
+      "image_url": "https://drive.google.com/file/d/1ZltbDly7mloqLcMtj-CNo3PGSAjYAaE0/view?usp=drive_link",
+      "errors": [],
+      "isNew": true
+    },
+    {
+      "shop_id": "sticks_coffee",
+      "product_name": "Ricotta + Egg",
+      "price": 8.5,
+      "description": "herby green sauce, fresh herbs",
+      "image_url": "https://drive.google.com/file/d/1JCaB4GCzFzqfAClx5kg6g08L5ppYstKT/view?usp=drive_link",
+      "errors": [],
+      "isNew": true
+    },
+    {
+      "shop_id": "sticks_coffee",
+      "product_name": "Burrata",
+      "price": 11,
+      "description": "heirloom tomato, stone fruit, pickled corn, pesto",
+      "image_url": "https://drive.google.com/file/d/1r6GzBIewe65q62BFiNLPuLagRurGijjY/view?usp=drive_link",
+      "errors": [],
+      "isNew": true
+    },
+    {
+      "shop_id": "sticks_coffee",
+      "product_name": "Granola",
+      "price": 9,
+      "description": "pecans, coconut, pepitas, with plain European-style yogurt and seasonal fruit",
+      "image_url": "https://drive.google.com/file/d/19Hb8V0_vUhRrSDIybY06WNWOgyvJunIy/view?usp=drive_link",
+      "errors": [],
+      "isNew": true
+    },
+    {
+      "shop_id": "sticks_coffee",
+      "product_name": "Breakfast Sammie",
+      "price": 9.5,
+      "description": "focaccia, avocado, medium boiled egg, herby green sauce, bacon, pickled peppers (grilled on sourdough with cheddar $11)",
+      "image_url": "https://drive.google.com/file/d/1I_K2W4S1bVPFPyCYpcGOJPqNJFa7NTJV/view?usp=drive_link",
+      "errors": [],
+      "isNew": true
+    },
+    {
+      "shop_id": "sticks_coffee",
+      "product_name": "Quinoa + Greens",
+      "price": 13,
+      "description": "chickpeas, feta, cucumber, scallions, pistachios, sesame seeds, sumac, fresh herbs, tahini dressing (add medium boiled egg $1.5, add za’atar chicken $3)",
+      "image_url": "https://drive.google.com/file/d/13I1piTuqPLmlRIgaS-VYcFx9dj3hp3q-/view?usp=drive_link",
+      "errors": [],
+      "isNew": true
+    },
+    {
+      "shop_id": "sticks_coffee",
+      "product_name": "Sticks Blue Salad",
+      "price": 15.5,
+      "description": "mixed greens, blue cheese, pickled red onions, cucumber, roasted chickpea, boiled egg, toasted walnuts, apple cider vinaigrette",
+      "image_url": "https://drive.google.com/file/d/1lgdGx8KMh6SAjmlGSNQb70yrcnTRncJM/view?usp=drive_link",
+      "errors": [],
+      "isNew": true
+    },
+    {
+      "shop_id": "sticks_coffee",
+      "product_name": "Bacon + Beet Sandwich",
+      "price": 13.5,
+      "description": "sourdough, bacon, herby chèvre, beets, mixed greens, balsamic aioli (vegetarian option: substitute avocado + cucumber for bacon $13.5, vegan option $13)",
+      "image_url": "https://drive.google.com/file/d/1wYoycLTLOLh4sSMF15q6GVRdu07AetbP/view?usp=drive_link",
+      "errors": [],
+      "isNew": true
+    },
+    {
+      "shop_id": "sticks_coffee",
+      "product_name": "Za’atar Chicken Sandwich",
+      "price": 13.5,
+      "description": "focaccia, harissa aioli, herby green sauce, feta, pickled cucumbers, mixed greens",
+      "image_url": "https://drive.google.com/file/d/1hN-qdFHQgISf550AVw6ZLWgaRLxN5rCu/view?usp=drive_link",
+      "errors": [],
+      "isNew": true
+    },
+    {
+      "shop_id": "sticks_coffee",
+      "product_name": "Classic Tuna Sandwich",
+      "price": 12.5,
+      "description": "sourdough, mixed greens, pickled peppers",
+      "image_url": "https://drive.google.com/file/d/1WInGvUFm2ZB177hQatgBmlhEjl5SUh_Q/view?usp=drive_link",
+      "errors": [],
+      "isNew": true
+    }
+  ]
+}
+✅ Processing 4 shops and 12 products
+🔄 Starting bulk operations
+🏪 Processing shop: Sticks Coffee
+🏪 Shop object to insert: {
+  "id": "1WW3mzdSqUxNtBnJvCydR",
+  "name": "Sticks Coffee",
+  "category": "Coffee shop",
+  "location": "4993 7th St, Mariposa, CA 95338, United States",
+  "phone": null,
+  "hours": "Tue-Fri: 7AM-2PM, Sun-Mon: Closed",
+  "business_email": null,
+  "website": null,
+  "social_links": null,
+  "about_shop": "Cozy neighborhood cafe serving fresh coffee",
+  "shop_photo": null,
+  "status": "approved",
+  "owner_id": "bdUVtf8KjX6Pvun8d7eWu",
+  "submitted_at": 1750847078880,
+  "approved_at": 1750847078880,
+  "rejected_at": null,
+  "rejection_reason": null,
+  "created_at": 1750847078880,
+  "updated_at": 1750847078880
+}
+✅ Shop created successfully: Sticks Coffee
+🏪 Processing shop: Cinnamon Roll Bakery & Café
+🏪 Shop object to insert: {
+  "id": "LW3T46VmljbM8zmjf2bQj",
+  "name": "Cinnamon Roll Bakery & Café",
+  "category": "Coffee shop",
+  "location": "5009 5th St, Mariposa, CA 95338, United States",
+  "phone": "+15596762815",
+  "hours": "Mon-Sun: 8AM-4PM",
+  "business_email": null,
+  "website": null,
+  "social_links": null,
+  "about_shop": "Cozy neighborhood cafe serving fresh coffee",
+  "shop_photo": null,
+  "status": "approved",
+  "owner_id": "HBhBdaR3LCmA0qgkLZ_8o",
+  "submitted_at": 1750847078886,
+  "approved_at": 1750847078886,
+  "rejected_at": null,
+  "rejection_reason": null,
+  "created_at": 1750847078886,
+  "updated_at": 1750847078886
+}
+✅ Shop created successfully: Cinnamon Roll Bakery & Café
+🏪 Processing shop: The Mariposa Marketplace
+🏪 Shop object to insert: {
+  "id": "ccbpo-ZRAt0KcDq7m5MSu",
+  "name": "The Mariposa Marketplace",
+  "category": "Gift shop",
+  "location": "5024 B CA-140, Mariposa, CA 95338, United States",
+  "phone": "+12099667377",
+  "hours": "Mon-Sun: 10AM-6PM",
+  "business_email": null,
+  "website": "https://mariposamarketplace.net/",
+  "social_links": null,
+  "about_shop": null,
+  "shop_photo": null,
+  "status": "approved",
+  "owner_id": "VZpZ8m6ZCVcDmtW2fbo31",
+  "submitted_at": 1750847078889,
+  "approved_at": 1750847078889,
+  "rejected_at": null,
+  "rejection_reason": null,
+  "created_at": 1750847078889,
+  "updated_at": 1750847078889
+}
+✅ Shop created successfully: The Mariposa Marketplace
+🏪 Processing shop: Yosemite Gifts
+🏪 Shop object to insert: {
+  "id": "X_LcL3L6mIrMFCWPo3_zl",
+  "name": "Yosemite Gifts",
+  "category": "Gift shop",
+  "location": "5023 CA-140, Mariposa, CA 95338, United States",
+  "phone": "+12099664343",
+  "hours": "Mon-Fri: 11AM-5PM Sat: 10:30AM-5:30PM Sun: 11:30AM-5PM",
+  "business_email": null,
+  "website": null,
+  "social_links": null,
+  "about_shop": null,
+  "shop_photo": null,
+  "status": "approved",
+  "owner_id": "PolAKfxdRomXZgQvmTERB",
+  "submitted_at": 1750847078891,
+  "approved_at": 1750847078891,
+  "rejected_at": null,
+  "rejection_reason": null,
+  "created_at": 1750847078891,
+  "updated_at": 1750847078891
+}
+✅ Shop created successfully: Yosemite Gifts
+📦 Processing product: Fruit + Ricotta
+📦 Product object to insert: {
+  "id": "wMHxwrcbFCaenw6YmGlzM",
+  "shop_id": "1WW3mzdSqUxNtBnJvCydR",
+  "name": "Fruit + Ricotta",
+  "image": "https://drive.google.com/file/d/1kHx0cdqmXthnu924wdcjtyhsuiDZKJDq/view?usp=drive_link",
+  "price": 7,
+  "description": "strawberry-rhubarb compote, mint",
+  "stock": null,
+  "is_archived": false,
+  "created_at": 1750847078899,
+  "updated_at": 1750847078899
+}
+❌ Error in bulk upload: SqliteError: NOT NULL constraint failed: products.stock
+    at PreparedQuery.values (/Users/amitesh/work/localpickup/localpick-market-demo/node_modules/src/better-sqlite3/session.ts:156:26)
+    at PreparedQuery.all (/Users/amitesh/work/localpickup/localpick-market-demo/node_modules/src/better-sqlite3/session.ts:124:21)
+    at QueryPromise.all (/Users/amitesh/work/localpickup/localpick-market-demo/node_modules/src/sqlite-core/query-builders/insert.ts:396:26)
+    at QueryPromise.execute (/Users/amitesh/work/localpickup/localpick-market-demo/node_modules/src/sqlite-core/query-builders/insert.ts:408:40)
+    at QueryPromise.then (/Users/amitesh/work/localpickup/localpick-market-demo/node_modules/src/query-promise.ts:31:15)
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5) {
+  code: 'SQLITE_CONSTRAINT_NOTNULL'
+}
+❌ Error stack: SqliteError: NOT NULL constraint failed: products.stock
+    at PreparedQuery.values (/Users/amitesh/work/localpickup/localpick-market-demo/node_modules/src/better-sqlite3/session.ts:156:26)
+    at PreparedQuery.all (/Users/amitesh/work/localpickup/localpick-market-demo/node_modules/src/better-sqlite3/session.ts:124:21)
+    at QueryPromise.all (/Users/amitesh/work/localpickup/localpick-market-demo/node_modules/src/sqlite-core/query-builders/insert.ts:396:26)
+    at QueryPromise.execute (/Users/amitesh/work/localpickup/localpick-market-demo/node_modules/src/sqlite-core/query-builders/insert.ts:408:40)
+    at QueryPromise.then (/Users/amitesh/work/localpickup/localpick-market-demo/node_modules/src/query-promise.ts:31:15)
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+3:54:38 PM [express] POST /api/shops/bulk-upload 500 in 23ms :: {"error":"Failed to upload shops and…
+🔄 Bulk upload request received
+📦 Request body: {
+  "shops": [
+    {
+      "shop_name": "Test Shop",
+      "shop_category": "Food",
+      "location": "Test Location",
+      "hours": "9-5"
+    }
+  ],
+  "products": [
+    {
+      "shop_id": "test_shop",
+      "product_name": "Test Product",
+      "price": "10.00",
+      "description": "Test"
+    }
+  ]
+}
+✅ Processing 1 shops and 1 products
+🔄 Starting bulk operations
+🏪 Processing shop: Test Shop
+🏪 Shop object to insert: {
+  "id": "4rzh_mAsNdjZwI9EoQVOO",
+  "name": "Test Shop",
+  "category": "Food",
+  "location": "Test Location",
+  "phone": null,
+  "hours": "9-5",
+  "business_email": null,
+  "website": null,
+  "social_links": null,
+  "about_shop": null,
+  "shop_photo": null,
+  "status": "approved",
+  "owner_id": "hH0w_doerjiisg71KOGFP",
+  "submitted_at": 1750847147872,
+  "approved_at": 1750847147872,
+  "rejected_at": null,
+  "rejection_reason": null,
+  "created_at": 1750847147872,
+  "updated_at": 1750847147872
+}
+✅ Shop created successfully: Test Shop
+📦 Processing product: Test Product
+📦 Product object to insert: {
+  "id": "rY0qlgDHmb6r1V3xvPKlZ",
+  "shop_id": "4rzh_mAsNdjZwI9EoQVOO",
+  "name": "Test Product",
+  "image": "/placeholder.svg",
+  "price": 10,
+  "description": "Test",
+  "stock": null,
+  "is_archived": false,
+  "created_at": 1750847147877,
+  "updated_at": 1750847147877
+}
+❌ Error in bulk upload: SqliteError: NOT NULL constraint failed: products.stock
+    at PreparedQuery.values (/Users/amitesh/work/localpickup/localpick-market-demo/node_modules/src/better-sqlite3/session.ts:156:26)
+    at PreparedQuery.all (/Users/amitesh/work/localpickup/localpick-market-demo/node_modules/src/better-sqlite3/session.ts:124:21)
+    at QueryPromise.all (/Users/amitesh/work/localpickup/localpick-market-demo/node_modules/src/sqlite-core/query-builders/insert.ts:396:26)
+    at QueryPromise.execute (/Users/amitesh/work/localpickup/localpick-market-demo/node_modules/src/sqlite-core/query-builders/insert.ts:408:40)
+    at QueryPromise.then (/Users/amitesh/work/localpickup/localpick-market-demo/node_modules/src/query-promise.ts:31:15)
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5) {
+  code: 'SQLITE_CONSTRAINT_NOTNULL'
+}
+❌ Error stack: SqliteError: NOT NULL constraint failed: products.stock
+    at PreparedQuery.values (/Users/amitesh/work/localpickup/localpick-market-demo/node_modules/src/better-sqlite3/session.ts:156:26)
+    at PreparedQuery.all (/Users/amitesh/work/localpickup/localpick-market-demo/node_modules/src/better-sqlite3/session.ts:124:21)
+    at QueryPromise.all (/Users/amitesh/work/localpickup/localpick-market-demo/node_modules/src/sqlite-core/query-builders/insert.ts:396:26)
+    at QueryPromise.execute (/Users/amitesh/work/localpickup/localpick-market-demo/node_modules/src/sqlite-core/query-builders/insert.ts:408:40)
+    at QueryPromise.then (/Users/amitesh/work/localpickup/localpick-market-demo/node_modules/src/query-promise.ts:31:15)
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+3:55:47 PM [express] POST /api/shops/bulk-upload 500 in 9ms :: {"error":"Failed to upload shops and …

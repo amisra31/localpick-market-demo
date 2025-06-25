@@ -163,9 +163,9 @@ export const ProductActionButtons: React.FC<ProductActionButtonsProps> = ({
                   </div>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="text-sm font-medium">Stock:</span>
+                  <span className="text-sm font-medium">Availability:</span>
                   <Badge variant={confirmDialog.product.stock > 0 ? 'default' : 'destructive'}>
-                    {confirmDialog.product.stock} available
+                    {confirmDialog.product.stock > 0 ? 'Available' : 'Out of Stock'}
                   </Badge>
                 </div>
                 <div className="text-sm text-gray-600">

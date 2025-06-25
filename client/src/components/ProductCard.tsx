@@ -1,10 +1,12 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Store, MapPin, Clock, Eye } from 'lucide-react';
 import { ProductWithShop } from '@/types';
+import { getImageWithFallback, getOptimizedImageUrl, logImageError, isPlaceholderImage } from '@/utils/imageUtils';
+import { generatePlusCode } from '@/utils/locationUtils';
 
 interface ProductCardProps {
   product: ProductWithShop;
@@ -36,12 +38,32 @@ export const ProductCard: React.FC<ProductCardProps> = ({
         {/* Image Container with Fixed Aspect Ratio */}
         <div className="relative aspect-square w-full bg-gradient-to-br from-gray-100 to-gray-200 rounded-xl mb-4 overflow-hidden">
           <img 
-            src={product.image} 
+            src={getOptimizedImageUrl(product.image, 400, 400)} 
             alt={product.name}
             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
             loading="lazy"
+            onLoad={() => {
+              console.log('✅ Image loaded successfully in ProductCard:', {
+                productName: product.name,
+                originalUrl: product.image,
+                processedUrl: getOptimizedImageUrl(product.image, 400, 400),
+                isGoogleDrive: product.image?.includes('drive.google.com')
+              });
+            }}
             onError={(e) => {
-              e.currentTarget.src = 'https://images.unsplash.com/photo-1560472354-b33ff0c44a43?w=400&h=400&fit=crop&crop=center';
+              console.log('❌ Image failed to load in ProductCard:', {
+                productName: product.name,
+                originalUrl: product.image,
+                processedUrl: getOptimizedImageUrl(product.image, 400, 400),
+                isGoogleDrive: product.image?.includes('drive.google.com'),
+                errorTarget: e.currentTarget.src
+              });
+              logImageError(product.image, 'ProductCard');
+              // If the original URL contains /api/placeholder, don't replace it
+              if (product.image && product.image.includes('/api/placeholder/')) {
+                return; // Keep the working placeholder
+              }
+              e.currentTarget.src = getImageWithFallback('');
               e.currentTarget.alt = 'Product placeholder';
             }}
           />
@@ -89,7 +111,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
                 <span className="font-medium text-gray-900 truncate">{product.shop.name}</span>
               </div>
               <div className="flex items-start gap-2 text-sm">
-                <MapPin className="w-4 h-4 text-orange-500 flex-shrink-0 mt-0.5" />
+                <MapPin className="w-4 h-4 text-gray-500 flex-shrink-0 mt-0.5" />
                 <button 
                   onClick={(e) => {
                     e.preventDefault();
@@ -97,9 +119,10 @@ export const ProductCard: React.FC<ProductCardProps> = ({
                     const googleMapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodedLocation}`;
                     window.open(googleMapsUrl, '_blank');
                   }}
-                  className="text-blue-600 hover:text-blue-800 hover:underline text-left leading-tight"
+                  className="text-gray-700 hover:text-gray-900 hover:underline text-left leading-tight text-sm"
+                  title="Open in Google Maps"
                 >
-                  {product.shop.location}
+                  {generatePlusCode(product.shop.location)}
                 </button>
               </div>
               <div className="flex items-center gap-2 text-sm">

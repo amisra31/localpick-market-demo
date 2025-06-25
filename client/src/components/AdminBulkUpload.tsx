@@ -156,71 +156,29 @@ const AdminBulkUpload: React.FC<AdminBulkUploadProps> = ({
     });
   };
 
-  // Validate shop data
+  // Validate shop data (minimal validation - allow blank fields)
   const validateShop = (shop: any): string[] => {
     const errors: string[] = [];
     
+    // Only check if we have at least a shop name to create something meaningful
     if (!shop.shop_name?.trim()) {
-      errors.push('Shop name is required');
-    }
-    
-    if (!shop.shop_category || !['Food', 'Gifts', 'Souvenirs', 'Other'].includes(shop.shop_category)) {
-      errors.push('Shop category must be Food, Gifts, Souvenirs, or Other');
-    }
-    
-    if (!shop.location?.trim()) {
-      errors.push('Location is required');
-    }
-    
-    if (!shop.phone?.trim()) {
-      errors.push('Phone number is required');
-    }
-    
-    if (!shop.hours?.trim()) {
-      errors.push('Operating hours are required');
-    }
-    
-    if (!shop.owner_name?.trim()) {
-      errors.push('Owner name is required');
-    }
-    
-    if (!shop.owner_email?.trim()) {
-      errors.push('Owner email is required');
-    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(shop.owner_email)) {
-      errors.push('Invalid owner email format');
-    }
-    
-    if (shop.business_email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(shop.business_email)) {
-      errors.push('Invalid business email format');
+      errors.push('Shop name is required for creation');
     }
     
     return errors;
   };
 
-  // Validate product data
+  // Validate product data (minimal validation - allow blank fields)
   const validateProduct = (product: any): string[] => {
     const errors: string[] = [];
     
-    if (!product.shop_id?.trim()) {
-      errors.push('Shop ID is required');
-    }
-    
+    // Only check if we have basic info to create something meaningful
     if (!product.product_name?.trim()) {
-      errors.push('Product name is required');
+      errors.push('Product name is required for creation');
     }
     
-    const price = parseFloat(product.price);
-    if (isNaN(price) || price <= 0) {
-      errors.push('Price must be a valid number greater than 0');
-    }
-    
-    if (!product.description?.trim()) {
-      errors.push('Description is required');
-    }
-    
-    const stock = parseInt(product.stock);
-    if (isNaN(stock) || stock < 0) {
-      errors.push('Stock must be a valid number greater than or equal to 0');
+    if (!product.shop_id?.trim()) {
+      errors.push('Shop ID is required to link product to shop');
     }
     
     return errors;

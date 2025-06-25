@@ -2,6 +2,46 @@ import type { Express } from "express";
 import { eq } from "drizzle-orm";
 import { db, schema } from "../db";
 import { nanoid } from "nanoid";
+import { getWebSocketManager } from "../websocket";
+
+// Image URL processing utilities for Google Drive URLs
+const convertGoogleDriveUrl = (url: string): string => {
+  if (!url || !url.includes('drive.google.com')) {
+    return url; // Return as-is if not a Google Drive URL
+  }
+  
+  // Extract file ID from various Google Drive URL formats
+  let fileIdMatch = url.match(/\/d\/([a-zA-Z0-9-_]+)/);
+  if (!fileIdMatch) {
+    fileIdMatch = url.match(/[?&]id=([a-zA-Z0-9-_]+)/);
+  }
+  
+  if (fileIdMatch) {
+    const fileId = fileIdMatch[1];
+    return `https://drive.google.com/uc?export=view&id=${fileId}`;
+  }
+  
+  return url; // Fallback to original URL
+};
+
+const processImageUrl = (imageUrl: string): string => {
+  if (!imageUrl || imageUrl.trim() === '') {
+    return '/placeholder.svg';
+  }
+  
+  const trimmedUrl = imageUrl.trim();
+  
+  // Convert Google Drive URLs to direct image URLs
+  const processedUrl = convertGoogleDriveUrl(trimmedUrl);
+  
+  // Validate that it looks like a reasonable URL
+  if (processedUrl.startsWith('http://') || processedUrl.startsWith('https://')) {
+    return processedUrl;
+  }
+  
+  // If it doesn't look like a URL, fall back to placeholder
+  return '/placeholder.svg';
+};
 
 export function registerShopRoutes(app: Express) {
   // Get all shops
@@ -192,14 +232,17 @@ export function registerShopRoutes(app: Express) {
 
       // First, create all shops
       for (const shopData of shops) {
+        // Skip shops without a name
+        if (!shopData.shop_name?.trim()) continue;
+        
         const shopId = nanoid();
         const shop = {
           id: shopId,
-          name: shopData.shop_name,
-          category: shopData.shop_category,
-          location: shopData.location,
+          name: shopData.shop_name.trim(),
+          category: shopData.shop_category || 'Other',
+          location: shopData.location || 'Location not specified',
           phone: shopData.phone || null,
-          hours: shopData.hours,
+          hours: shopData.hours || 'Hours not specified',
           business_email: shopData.business_email || null,
           website: shopData.website || null,
           social_links: null,
@@ -226,6 +269,9 @@ export function registerShopRoutes(app: Express) {
 
       // Then, create all products
       for (const productData of products) {
+        // Skip products without a name
+        if (!productData.product_name?.trim()) continue;
+        
         // Find the corresponding shop ID
         let shopId = shopIdMap.get(productData.shop_id);
         
@@ -242,14 +288,28 @@ export function registerShopRoutes(app: Express) {
           continue; // Skip this product
         }
 
+        // Parse price and stock with fallbacks
+        const price = productData.price ? parseFloat(productData.price) : 0;
+        const stockValue = productData.stock !== undefined && productData.stock !== null && productData.stock !== '' 
+          ? parseInt(productData.stock) 
+          : 0;
+
+        // Process image URL with Google Drive conversion and validation
+        const processedImageUrl = processImageUrl(productData.image_url || productData.image || '');
+        
+        console.log(`Processing image for ${productData.product_name}:`, {
+          original: productData.image_url || productData.image || '',
+          processed: processedImageUrl
+        });
+
         const product = {
           id: nanoid(),
           shop_id: shopId,
-          name: productData.product_name,
-          image: productData.image_url || '/placeholder.svg',
-          price: parseFloat(productData.price),
-          description: productData.description,
-          stock: parseInt(productData.stock),
+          name: productData.product_name.trim(),
+          image: processedImageUrl,
+          price: isNaN(price) ? 0 : price,
+          description: productData.description || 'No description provided',
+          stock: isNaN(stockValue) ? 0 : stockValue,
           is_archived: false,
           created_at: Date.now(),
           updated_at: Date.now()
@@ -259,20 +319,122 @@ export function registerShopRoutes(app: Express) {
         createdProducts.push(createdProduct);
       }
 
-      // TODO: Add real-time sync via WebSocket broadcasting
-      // Broadcast new shops and products to all connected clients
+      // Real-time sync: Broadcast new shops and products to all connected clients
+      const wsManager = getWebSocketManager();
+      if (wsManager) {
+        if (createdShops.length > 0) {
+          wsManager.broadcastToAll('shops:bulk-created', {
+            shops: createdShops,
+            count: createdShops.length
+          });
+        }
+        
+        if (createdProducts.length > 0) {
+          wsManager.broadcastToAll('products:bulk-created', {
+            products: createdProducts,
+            count: createdProducts.length
+          });
+        }
+      }
 
       res.status(201).json({
         success: true,
         created_shops: createdShops.length,
         created_products: createdProducts.length,
         shops: createdShops,
-        products: createdProducts
+        products: createdProducts,
+        image_processing_summary: createdProducts.map(p => ({
+          product_name: p.name,
+          image_url: p.image,
+          is_google_drive: p.image.includes('drive.google.com')
+        }))
       });
 
     } catch (error) {
       console.error('Error in bulk upload:', error);
       res.status(500).json({ error: 'Failed to upload shops and products' });
     }
+  });
+
+  // Admin route to clean up database - remove test shops and duplicates
+  app.delete('/api/shops/cleanup', async (req, res) => {
+    try {
+      // Get all shops
+      const allShops = await db.select().from(schema.shops);
+      
+      // Identify test shops (shops with test-related names or locations)
+      const testShopIds = allShops
+        .filter(shop => 
+          shop.name.toLowerCase().includes('test') ||
+          shop.name.toLowerCase().includes('debug') ||
+          shop.name.toLowerCase().includes('final') ||
+          shop.name.toLowerCase().includes('working') ||
+          shop.name.toLowerCase().includes('fixed') ||
+          shop.location.toLowerCase().includes('test')
+        )
+        .map(shop => shop.id);
+      
+      // Identify duplicate shops (same name and location)
+      const shopMap = new Map();
+      const duplicateIds = [];
+      
+      allShops.forEach(shop => {
+        const key = `${shop.name.toLowerCase().trim()}_${shop.location.toLowerCase().trim()}`;
+        if (shopMap.has(key)) {
+          // Keep the most recent one, mark older ones for deletion
+          const existingShop = shopMap.get(key);
+          if (shop.created_at > existingShop.created_at) {
+            duplicateIds.push(existingShop.id);
+            shopMap.set(key, shop);
+          } else {
+            duplicateIds.push(shop.id);
+          }
+        } else {
+          shopMap.set(key, shop);
+        }
+      });
+      
+      const toDelete = [...new Set([...testShopIds, ...duplicateIds])];
+      
+      if (toDelete.length > 0) {
+        // Delete associated products first (foreign key constraint)
+        await db.delete(schema.products).where(
+          schema.products.shop_id.in(toDelete)
+        );
+        
+        // Delete the shops
+        await db.delete(schema.shops).where(
+          schema.shops.id.in(toDelete)
+        );
+      }
+      
+      res.json({
+        success: true,
+        deletedShops: toDelete.length,
+        testShopsRemoved: testShopIds.length,
+        duplicatesRemoved: duplicateIds.length
+      });
+      
+    } catch (error) {
+      console.error('Error cleaning up database:', error);
+      res.status(500).json({ error: 'Failed to clean up database' });
+    }
+  });
+
+  // Test endpoint for image URL processing
+  app.post('/api/test-image-processing', (req, res) => {
+    const { image_urls } = req.body;
+    
+    if (!image_urls || !Array.isArray(image_urls)) {
+      return res.status(400).json({ error: 'image_urls array is required' });
+    }
+    
+    const results = image_urls.map(url => ({
+      original: url,
+      processed: processImageUrl(url),
+      is_google_drive: url?.includes('drive.google.com') || false
+    }));
+    
+    res.json({ results });
   });
 }

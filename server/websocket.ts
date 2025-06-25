@@ -380,6 +380,27 @@ export class WebSocketManager {
     });
   }
 
+  // Public method to broadcast general events to all connected clients
+  public broadcastToAll(eventType: string, payload?: any) {
+    const message = {
+      type: eventType,
+      payload,
+      timestamp: Date.now()
+    };
+
+    console.log(`📡 Broadcasting ${eventType} to ${this.clients.size} clients`);
+    
+    this.clients.forEach((ws, clientId) => {
+      if (ws.readyState === WebSocket.OPEN) {
+        try {
+          ws.send(JSON.stringify(message));
+        } catch (error) {
+          console.error(`Failed to send broadcast to ${clientId}:`, error);
+        }
+      }
+    });
+  }
+
   public getStats() {
     return {
       totalConnections: this.clients.size,

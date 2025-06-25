@@ -13,6 +13,8 @@ import { ProductWithShop, Shop } from "@/types";
 import { Search, MapPin, Clock, ShoppingBag, Eye, Store, Settings, BarChart3, Navigation, Coffee, Gift, Smartphone, Baby, Dumbbell, Plus, ChevronLeft, ChevronRight } from "lucide-react";
 import { ProductCard } from "@/components/ProductCard";
 import { SimpleLocationAutocomplete } from "@/components/SimpleLocationAutocomplete";
+import { getImageWithFallback, getOptimizedImageUrl, logImageError, getDefaultPlaceholder } from "@/utils/imageUtils";
+import { generatePlusCode } from "@/utils/locationUtils";
 
 const Index = () => {
   const { user, isAuthenticated } = useAuth();
@@ -28,6 +30,7 @@ const Index = () => {
   const [nearbyShops, setNearbyShops] = useState<Shop[]>([]);
   const [userLocation, setUserLocation] = useState<string>('Mariposa, CA');
   const [locationCoordinates, setLocationCoordinates] = useState<{lat: number, lng: number} | null>(null);
+  const [selectedShopId, setSelectedShopId] = useState<string | null>(null);
 
   // Redirect users to their appropriate dashboards based on role
   useEffect(() => {
@@ -55,6 +58,9 @@ const Index = () => {
     if (savedLocation) {
       setUserLocation(savedLocation);
     }
+    
+    // Try to get user's actual location
+    detectUserLocation();
     
     // Reset state to ensure clean start
     setProducts([]);
@@ -89,6 +95,10 @@ const Index = () => {
       
       const productsWithShop: ProductWithShop[] = allProducts.map(product => {
         const shop = allShops.find(s => s.id === product.shopId);
+        if (!shop) {
+          console.warn(`🚨 No shop found for product ${product.id} with shopId: ${product.shopId}`);
+          console.log('Available shop IDs:', allShops.map(s => s.id));
+        }
         return {
           ...product,
           shop: shop!
@@ -162,12 +172,121 @@ const Index = () => {
     loadNearbyShops();
   };
 
-  // Calculate distance between user location and shop (placeholder)
+  // Calculate distance between user location and shop using Haversine formula
   const calculateDistance = (userCoords: {lat: number, lng: number}, shop: any): string => {
-    // In a real app, you'd calculate actual distance using haversine formula
-    // For now, return mock distances
-    const distances = ['0.2 mi', '0.5 mi', '0.8 mi', '1.2 mi', '1.5 mi', '2.1 mi'];
-    return distances[Math.floor(Math.random() * distances.length)];
+    // For now, we'll use mock coordinates for shops since we don't have actual lat/lng in database
+    // In production, you'd geocode the shop location or store lat/lng in database
+    const shopCoords = getShopCoordinates(shop.location);
+    
+    const R = 3959; // Earth's radius in miles
+    const dLat = toRad(shopCoords.lat - userCoords.lat);
+    const dLon = toRad(shopCoords.lng - userCoords.lng);
+    const lat1 = toRad(userCoords.lat);
+    const lat2 = toRad(shopCoords.lat);
+
+    const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+            Math.sin(dLon/2) * Math.sin(dLon/2) * Math.cos(lat1) * Math.cos(lat2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+    const distance = R * c;
+
+    if (distance < 1) {
+      return `${(distance * 5280).toFixed(0)} ft`;
+    } else {
+      return `${distance.toFixed(1)} mi`;
+    }
+  };
+
+  // Helper function to convert degrees to radians
+  const toRad = (degrees: number): number => {
+    return degrees * (Math.PI / 180);
+  };
+
+  // Mock function to get shop coordinates (in production, use geocoding API)
+  const getShopCoordinates = (location: string): {lat: number, lng: number} => {
+    // Simple hash-based coordinate generation for demo
+    const hash = location.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+    // Generate coordinates around Mariposa, CA area (37.4845, -119.9661)
+    const lat = 37.4845 + (hash % 100 - 50) * 0.001;
+    const lng = -119.9661 + (hash % 100 - 50) * 0.001;
+    return { lat, lng };
+  };
+
+  // Helper function to get distance in miles (for sorting)
+  const getDistanceInMiles = (userCoords: {lat: number, lng: number}, shop: any): number => {
+    const shopCoords = getShopCoordinates(shop.location);
+    
+    const R = 3959; // Earth's radius in miles
+    const dLat = toRad(shopCoords.lat - userCoords.lat);
+    const dLon = toRad(shopCoords.lng - userCoords.lng);
+    const lat1 = toRad(userCoords.lat);
+    const lat2 = toRad(shopCoords.lat);
+
+    const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+            Math.sin(dLon/2) * Math.sin(dLon/2) * Math.cos(lat1) * Math.cos(lat2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+    return R * c;
+  };
+
+  // Reverse geocode coordinates to get readable address
+  const reverseGeocode = async (coords: {lat: number, lng: number}): Promise<string> => {
+    try {
+      const response = await fetch(`/api/location/search?lat=${coords.lat}&lng=${coords.lng}&limit=1`);
+      if (response.ok) {
+        const results = await response.json();
+        if (results && results.length > 0) {
+          return results[0].description || `${coords.lat.toFixed(4)}, ${coords.lng.toFixed(4)}`;
+        }
+      }
+    } catch (error) {
+      console.log('❌ Reverse geocoding failed:', error);
+    }
+    // Fallback to coordinates if reverse geocoding fails
+    return `${coords.lat.toFixed(4)}, ${coords.lng.toFixed(4)}`;
+  };
+
+  // Detect user's geolocation
+  const detectUserLocation = () => {
+    if (navigator.geolocation) {
+      console.log('🗺️ Attempting to detect user location...');
+      navigator.geolocation.getCurrentPosition(
+        async (position) => {
+          const coords = {
+            lat: position.coords.latitude,
+            lng: position.coords.longitude
+          };
+          console.log('📍 User location detected:', coords);
+          setLocationCoordinates(coords);
+          
+          // Reverse geocode to get readable address
+          const address = await reverseGeocode(coords);
+          console.log('🏠 Address resolved:', address);
+          setUserLocation(address);
+          localStorage.setItem('userLocation', address);
+          localStorage.setItem('userCoordinates', JSON.stringify(coords));
+          
+          // Reload nearby shops with new location
+          loadNearbyShops();
+        },
+        (error) => {
+          console.log('❌ Geolocation error:', error.message);
+          // Fall back to default coordinates for Mariposa, CA
+          const defaultCoords = { lat: 37.4845, lng: -119.9661 };
+          setLocationCoordinates(defaultCoords);
+          localStorage.setItem('userCoordinates', JSON.stringify(defaultCoords));
+        },
+        {
+          enableHighAccuracy: true,
+          timeout: 10000,
+          maximumAge: 300000 // Cache for 5 minutes
+        }
+      );
+    } else {
+      console.log('❌ Geolocation not supported');
+      // Fall back to default coordinates
+      const defaultCoords = { lat: 37.4845, lng: -119.9661 };
+      setLocationCoordinates(defaultCoords);
+      localStorage.setItem('userCoordinates', JSON.stringify(defaultCoords));
+    }
   };
 
 
@@ -180,11 +299,18 @@ const Index = () => {
 
   const loadNearbyShops = async () => {
     try {
-      // Get all shops from database - no mock data
-      const allShops = await enhancedDataService.getShops();
-      console.log('📍 Loaded shops from database:', allShops.length);
+      // Force fresh data by bypassing cache for nearby shops
+      const response = await fetch(`/api/shops?t=${Date.now()}`, {
+        cache: 'no-cache',
+        headers: {
+          'Cache-Control': 'no-cache'
+        }
+      });
+      if (!response.ok) throw new Error('Failed to fetch shops');
+      const allShops = await response.json();
+      console.log('📍 Loaded shops from database (fresh):', allShops.length);
       
-      // Filter shops that have valid location data
+      // Filter shops that have valid location data and remove duplicates
       const validShops = allShops.filter(shop => 
         shop.location && 
         shop.location.trim() !== '' && 
@@ -192,19 +318,55 @@ const Index = () => {
         shop.name.trim() !== ''
       );
       
-      console.log('✅ Valid shops with location data:', validShops.length);
+      // Remove duplicates based on name and location combination
+      const uniqueShops = validShops.filter((shop, index, self) => 
+        index === self.findIndex(s => 
+          s.name.toLowerCase().trim() === shop.name.toLowerCase().trim() &&
+          s.location.toLowerCase().trim() === shop.location.toLowerCase().trim()
+        )
+      );
       
-      // For now, show up to 6 shops (in production, you'd calculate distance from user location)
-      const nearbyShopsList = validShops.slice(0, 6).map(shop => ({
+      console.log('✅ Valid shops with location data:', validShops.length);
+      console.log('🔄 Unique shops after deduplication:', uniqueShops.length);
+      
+      // If we have user coordinates, sort by proximity; otherwise sort by most recent
+      let sortedShops;
+      if (locationCoordinates) {
+        // Add calculated distance to each shop for sorting
+        const shopsWithDistance = uniqueShops.map(shop => ({
+          ...shop,
+          calculatedDistance: calculateDistance(locationCoordinates, shop),
+          distanceInMiles: getDistanceInMiles(locationCoordinates, shop)
+        }));
+        
+        // Sort by actual distance
+        sortedShops = shopsWithDistance.sort((a, b) => a.distanceInMiles - b.distanceInMiles);
+        console.log('🔍 Shops sorted by proximity:', sortedShops.map(s => `${s.name} (${s.calculatedDistance})`));
+      } else {
+        // Fallback to sorting by most recent
+        sortedShops = uniqueShops.sort((a, b) => b.created_at - a.created_at);
+        console.log('🔍 Shops sorted by recent:', sortedShops.map(s => s.name));
+      }
+      
+      const nearbyShopsList = sortedShops.slice(0, 10).map(shop => ({
         ...shop,
-        // You can add distance calculation here if you have user coordinates
         distance: locationCoordinates 
           ? calculateDistance(locationCoordinates, shop) 
-          : '📍 Location-based distance coming soon'
+          : null
       }));
       
-      setNearbyShops(nearbyShopsList);
-      console.log('🏪 Set nearby shops from database:', nearbyShopsList.length);
+      // If there's a selected shop, move it to the top
+      let finalShopsList = nearbyShopsList;
+      if (selectedShopId) {
+        const selectedShopIndex = finalShopsList.findIndex(shop => shop.id === selectedShopId);
+        if (selectedShopIndex > 0) {
+          const selectedShop = finalShopsList.splice(selectedShopIndex, 1)[0];
+          finalShopsList.unshift(selectedShop);
+        }
+      }
+      
+      setNearbyShops(finalShopsList);
+      console.log('🏪 Set nearby shops from database:', nearbyShopsList.length, nearbyShopsList.map(s => s.name));
       
       if (nearbyShopsList.length === 0) {
         console.log('⚠️ No shops found in database with valid location data');
@@ -220,6 +382,17 @@ const Index = () => {
       setCategoryFilter(category === 'Coffee' ? 'Food' : 'Gifts');
     }
   };
+
+  // Real-time sync: Reload data when products or shops are updated
+  useProductSync(() => {
+    console.log('🔄 Product update detected - reloading products');
+    loadProducts();
+  });
+
+  useShopSync(() => {
+    console.log('🔄 Shop update detected - reloading nearby shops');
+    loadNearbyShops();
+  });
 
   const categories = [
     { name: 'Coffee', icon: Coffee, enabled: true, filter: 'Food' },
@@ -331,9 +504,14 @@ const Index = () => {
                 {nearbyShops.map((shop: any) => (
                   <div
                     key={shop.id}
-                    className="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-50 transition-colors cursor-pointer border border-gray-100 mb-2 last:mb-0"
+                    className={`flex items-center gap-3 p-3 rounded-lg transition-colors cursor-pointer border mb-2 last:mb-0 ${
+                      selectedShopId === shop.id 
+                        ? 'bg-blue-50 border-blue-200 ring-2 ring-blue-200' 
+                        : 'hover:bg-gray-50 border-gray-100'
+                    }`}
                     onClick={() => {
-                      // Search for the shop name instead of filtering
+                      // Set selected shop and search for it
+                      setSelectedShopId(shop.id);
                       setSearchQuery(shop.name);
                     }}
                   >
@@ -346,18 +524,21 @@ const Index = () => {
                       {shop.distance && (
                         <p className="text-xs text-gray-400">{shop.distance}</p>
                       )}
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          const encodedLocation = encodeURIComponent(shop.location);
-                          const googleMapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodedLocation}`;
-                          window.open(googleMapsUrl, '_blank');
-                        }}
-                        className="flex items-center gap-1 text-xs text-blue-600 hover:text-blue-800 hover:underline mt-1"
-                      >
-                        <Plus className="w-3 h-3" />
-                        {shop.location}
-                      </button>
+                      <div className="flex items-center gap-2 mt-1">
+                        <MapPin className="w-3 h-3 text-gray-400 flex-shrink-0" />
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            const encodedLocation = encodeURIComponent(shop.location);
+                            const googleMapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodedLocation}`;
+                            window.open(googleMapsUrl, '_blank');
+                          }}
+                          className="text-xs text-gray-400 hover:text-gray-600 hover:underline text-left"
+                          title="Open in Google Maps"
+                        >
+                          {generatePlusCode(shop.location)}
+                        </button>
+                      </div>
                     </div>
                   </div>
                 ))}
@@ -399,12 +580,39 @@ const Index = () => {
                       {/* Image - 70% of tile */}
                       <div className="relative h-48 bg-gradient-to-br from-gray-100 to-gray-200 rounded-t-xl overflow-hidden">
                         <img 
-                          src={product.image} 
+                          src={getOptimizedImageUrl(product.image, 400, 300)} 
                           alt={product.name}
                           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                           loading="lazy"
+                          onLoad={() => {
+                            console.log('✅ Image loaded successfully in Index Grid:', {
+                              productName: product.name,
+                              originalUrl: product.image,
+                              processedUrl: getOptimizedImageUrl(product.image, 400, 300),
+                              isGoogleDrive: product.image?.includes('drive.google.com')
+                            });
+                          }}
                           onError={(e) => {
-                            e.currentTarget.src = 'https://images.unsplash.com/photo-1560472354-b33ff0c44a43?w=400&h=400&fit=crop&crop=center';
+                            console.log('❌ Image failed to load in Index Grid:', {
+                              productName: product.name,
+                              originalUrl: product.image,
+                              processedUrl: getOptimizedImageUrl(product.image, 400, 300),
+                              isGoogleDrive: product.image?.includes('drive.google.com'),
+                              errorTarget: e.currentTarget.src
+                            });
+                            logImageError(product.image, 'Index Grid');
+                            // If the original URL contains /api/placeholder, don't replace it
+                            if (product.image && product.image.includes('/api/placeholder/')) {
+                              return; // Keep the working placeholder
+                            }
+                            // For Google Drive URLs that failed through proxy, fall back to placeholder
+                            if (product.image && product.image.includes('drive.google.com')) {
+                              console.log('🔄 Google Drive image failed on Index, using fallback');
+                              e.currentTarget.src = getDefaultPlaceholder();
+                              e.currentTarget.alt = 'Product placeholder';
+                              return;
+                            }
+                            e.currentTarget.src = getDefaultPlaceholder();
                             e.currentTarget.alt = 'Product placeholder';
                           }}
                         />
@@ -422,28 +630,26 @@ const Index = () => {
                         <h3 className="font-semibold text-gray-900 line-clamp-1">{product.name}</h3>
                         <div className="flex items-center justify-between">
                           <span className="text-lg font-bold text-emerald-600">${product.price}</span>
-                          {product.stock > 0 && product.stock <= 5 && (
-                            <Badge variant="outline" className="text-xs bg-orange-50 text-orange-700 border-orange-200">
-                              Only a few left!
-                            </Badge>
-                          )}
+                          {/* Stock count hidden for customers - only show out of stock overlay above */}
                         </div>
                         <div className="flex items-center gap-2 text-sm text-gray-600">
                           <Store className="w-3 h-3" />
                           <span className="truncate">{product.shop.name}</span>
                         </div>
-                        <button
-                          onClick={(e) => {
-                            e.preventDefault();
-                            const encodedLocation = encodeURIComponent(product.shop.location);
-                            const googleMapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodedLocation}`;
-                            window.open(googleMapsUrl, '_blank');
-                          }}
-                          className="flex items-center gap-1 text-xs text-blue-600 hover:text-blue-800 hover:underline"
-                        >
-                          <Plus className="w-3 h-3" />
-                          {product.shop.location}
-                        </button>
+                        <div className="flex items-center gap-2 text-sm text-gray-600">
+                          <MapPin className="w-3 h-3 text-gray-600" />
+                          <button
+                            onClick={(e) => {
+                              e.preventDefault();
+                              const encodedLocation = encodeURIComponent(product.shop.location);
+                              const googleMapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodedLocation}`;
+                              window.open(googleMapsUrl, '_blank');
+                            }}
+                            className="text-xs text-gray-600 hover:text-gray-800 hover:underline text-left"
+                          >
+                            {generatePlusCode(product.shop.location)}
+                          </button>
+                        </div>
                       </CardContent>
                     </Card>
                   </Link>

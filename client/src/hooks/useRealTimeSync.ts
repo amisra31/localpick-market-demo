@@ -47,8 +47,10 @@ export function useShopSync(onShopUpdate?: (shop: any) => void) {
     if (!onShopUpdate) return;
 
     const unsubscribers = [
+      subscribe('shop:created', onShopUpdate),
       subscribe('shop:updated', onShopUpdate),
       subscribe('shop:hours-updated', onShopUpdate),
+      subscribe('shops:bulk-created', onShopUpdate),
     ];
 
     return () => unsubscribers.forEach(unsub => unsub());

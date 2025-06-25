@@ -23,11 +23,26 @@ export const generatePlusCode = (location: string): string => {
   // Format as Plus Code (4+4 format with + separator)
   const formatted = `${code.slice(0, 4)}+${code.slice(4)}`;
   
-  // Extract city/state from location if possible
-  const parts = location.split(',');
-  const cityState = parts.length > 1 ? parts.slice(-2).join(',').trim() : location;
+  // Extract city and state from location, excluding country
+  const parts = location.split(',').map(part => part.trim());
   
-  return `${formatted}, ${cityState}`;
+  // Filter out common country references
+  const filteredParts = parts.filter(part => 
+    !part.toLowerCase().includes('united states') && 
+    !part.toLowerCase().includes('usa') &&
+    !part.toLowerCase().includes('us') &&
+    part.length > 0
+  );
+  
+  if (filteredParts.length >= 2) {
+    const city = filteredParts[filteredParts.length - 2];
+    const state = filteredParts[filteredParts.length - 1];
+    return `${formatted} ${city}, ${state}`;
+  } else if (filteredParts.length === 1) {
+    return `${formatted} ${filteredParts[0]}`;
+  } else {
+    return `${formatted} ${parts[0]}`;
+  };
 };
 
 /**
