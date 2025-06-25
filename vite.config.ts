@@ -28,4 +28,9 @@ export default defineConfig({
     outDir: path.resolve(import.meta.dirname, "dist/public"),
     emptyOutDir: true,
   },
+  server: {
+    allowedHosts: [
+      "501629e5-c9eb-493e-9929-7fb2b13d721f-00-2dbb78tsnbuv6.kirk.replit.dev",
+    ],
+  },
 });
