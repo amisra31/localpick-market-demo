@@ -17,7 +17,7 @@ import { ImageWithFallback } from "@/components/ui/ImageWithFallback";
 import { generatePlusCode } from "@/utils/locationUtils";
 
 const Index = () => {
-  const { user, isAuthenticated } = useAuth();
+  const { user, isAuthenticated, loading } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const [products, setProducts] = useState<ProductWithShop[]>([]);
@@ -115,12 +115,12 @@ const Index = () => {
       filtered = filtered.filter(product => 
         product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
         product.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        product.shop.name.toLowerCase().includes(searchQuery.toLowerCase())
+        (product.shop?.name && product.shop.name.toLowerCase().includes(searchQuery.toLowerCase()))
       );
     }
 
     if (categoryFilter !== "all") {
-      filtered = filtered.filter(product => product.shop.category === categoryFilter);
+      filtered = filtered.filter(product => product.shop?.category === categoryFilter);
     }
 
     // Ensure no duplicates in filtered results
@@ -223,19 +223,16 @@ const Index = () => {
   // Detect user's geolocation
   const detectUserLocation = () => {
     if (navigator.geolocation) {
-      console.log('🗺️ Attempting to detect user location...');
       navigator.geolocation.getCurrentPosition(
         async (position) => {
           const coords = {
             lat: position.coords.latitude,
             lng: position.coords.longitude
           };
-          console.log('📍 User location detected:', coords);
           setLocationCoordinates(coords);
           
           // Reverse geocode to get readable address
           const address = await reverseGeocode(coords);
-          console.log('🏠 Address resolved:', address);
           setUserLocation(address);
           localStorage.setItem('userLocation', address);
           localStorage.setItem('userCoordinates', JSON.stringify(coords));
@@ -257,7 +254,6 @@ const Index = () => {
         }
       );
     } else {
-      console.log('❌ Geolocation not supported');
       // Fall back to default coordinates
       const defaultCoords = { lat: 37.4845, lng: -119.9661 };
       setLocationCoordinates(defaultCoords);
@@ -284,7 +280,6 @@ const Index = () => {
       });
       if (!response.ok) throw new Error('Failed to fetch shops');
       const allShops = await response.json();
-      console.log('📍 Loaded shops from database (fresh):', allShops.length);
       
       // Filter shops that have valid location data and remove duplicates
       const validShops = allShops.filter(shop => 
@@ -302,9 +297,6 @@ const Index = () => {
         )
       );
       
-      console.log('✅ Valid shops with location data:', validShops.length);
-      console.log('🔄 Unique shops after deduplication:', uniqueShops.length);
-      
       // If we have user coordinates, sort by proximity; otherwise sort by most recent
       let sortedShops;
       if (locationCoordinates) {
@@ -317,11 +309,9 @@ const Index = () => {
         
         // Sort by actual distance
         sortedShops = shopsWithDistance.sort((a, b) => a.distanceInMiles - b.distanceInMiles);
-        console.log('🔍 Shops sorted by proximity:', sortedShops.map(s => `${s.name} (${s.calculatedDistance})`));
       } else {
         // Fallback to sorting by most recent
         sortedShops = uniqueShops.sort((a, b) => b.created_at - a.created_at);
-        console.log('🔍 Shops sorted by recent:', sortedShops.map(s => s.name));
       }
       
       const nearbyShopsList = sortedShops.slice(0, 10).map(shop => ({
@@ -342,11 +332,6 @@ const Index = () => {
       }
       
       setNearbyShops(finalShopsList);
-      console.log('🏪 Set nearby shops from database:', nearbyShopsList.length, nearbyShopsList.map(s => s.name));
-      
-      if (nearbyShopsList.length === 0) {
-        console.log('⚠️ No shops found in database with valid location data');
-      }
     } catch (error) {
       console.error('Failed to load nearby shops:', error);
       setNearbyShops([]); // Clear shops on error
@@ -361,12 +346,10 @@ const Index = () => {
 
   // Real-time sync: Reload data when products or shops are updated
   useProductSync(() => {
-    console.log('🔄 Product update detected - reloading products');
     loadProducts();
   });
 
   useShopSync(() => {
-    console.log('🔄 Shop update detected - reloading nearby shops');
     loadNearbyShops();
   });
 
@@ -377,6 +360,15 @@ const Index = () => {
     { name: 'Kids', icon: Baby, enabled: false },
     { name: 'Sports', icon: Dumbbell, enabled: false }
   ];
+
+  // Show loading state while auth is initializing (must come after all hooks)
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+      </div>
+    );
+  }
 
   return (
     <div key={componentKey} className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50">
@@ -581,22 +573,24 @@ const Index = () => {
                         </div>
                         <div className="flex items-center gap-2 text-sm text-gray-600">
                           <Store className="w-3 h-3" />
-                          <span className="truncate">{product.shop.name}</span>
+                          <span className="truncate">{product.shop?.name || 'Unknown Shop'}</span>
                         </div>
-                        <div className="flex items-center gap-2 text-sm text-gray-600">
-                          <MapPin className="w-3 h-3 text-gray-600" />
-                          <button
-                            onClick={(e) => {
-                              e.preventDefault();
-                              const encodedLocation = encodeURIComponent(product.shop.location);
-                              const googleMapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodedLocation}`;
-                              window.open(googleMapsUrl, '_blank');
-                            }}
-                            className="text-xs text-gray-600 hover:text-gray-800 hover:underline text-left"
-                          >
-                            {generatePlusCode(product.shop.location)}
-                          </button>
-                        </div>
+                        {product.shop?.location && (
+                          <div className="flex items-center gap-2 text-sm text-gray-600">
+                            <MapPin className="w-3 h-3 text-gray-600" />
+                            <button
+                              onClick={(e) => {
+                                e.preventDefault();
+                                const encodedLocation = encodeURIComponent(product.shop.location);
+                                const googleMapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodedLocation}`;
+                                window.open(googleMapsUrl, '_blank');
+                              }}
+                              className="text-xs text-gray-600 hover:text-gray-800 hover:underline text-left"
+                            >
+                              {generatePlusCode(product.shop.location)}
+                            </button>
+                          </div>
+                        )}
                       </CardContent>
                     </Card>
                   </Link>

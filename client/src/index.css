@@ -37,20 +37,50 @@
     --radius: 0.5rem;
 
     --sidebar-background: 0 0% 98%;
-
     --sidebar-foreground: 240 5.3% 26.1%;
-
     --sidebar-primary: 240 5.9% 10%;
-
     --sidebar-primary-foreground: 0 0% 98%;
-
     --sidebar-accent: 240 4.8% 95.9%;
-
     --sidebar-accent-foreground: 240 5.9% 10%;
-
     --sidebar-border: 220 13% 91%;
-
     --sidebar-ring: 217.2 91.2% 59.8%;
+
+    /* LocalPick Market Brand Colors */
+    --brand-primary: 220 91% 50%;        /* LocalPick Blue */
+    --brand-primary-light: 220 91% 95%;  /* Light Blue Background */
+    --brand-secondary: 280 90% 50%;      /* LocalPick Purple */
+    --brand-secondary-light: 280 90% 95%; /* Light Purple Background */
+    --brand-accent: 160 85% 45%;         /* LocalPick Green */
+    --brand-accent-light: 160 85% 95%;   /* Light Green Background */
+    
+    /* Typography Scale */
+    --font-size-xs: 0.75rem;   /* 12px */
+    --font-size-sm: 0.875rem;  /* 14px */
+    --font-size-base: 1rem;    /* 16px - minimum readable */
+    --font-size-lg: 1.125rem;  /* 18px */
+    --font-size-xl: 1.25rem;   /* 20px */
+    --font-size-2xl: 1.5rem;   /* 24px */
+    --font-size-3xl: 1.875rem; /* 30px */
+    --font-size-4xl: 2.25rem;  /* 36px */
+    
+    /* Spacing Scale */
+    --spacing-xs: 0.25rem;  /* 4px */
+    --spacing-sm: 0.5rem;   /* 8px */
+    --spacing-md: 1rem;     /* 16px */
+    --spacing-lg: 1.5rem;   /* 24px */
+    --spacing-xl: 2rem;     /* 32px */
+    --spacing-2xl: 3rem;    /* 48px */
+    --spacing-3xl: 4rem;    /* 64px */
+    
+    /* Layout */
+    --header-height: 4rem;    /* 64px */
+    --sidebar-width: 16rem;   /* 256px */
+    --content-max-width: 80rem; /* 1280px */
+    
+    /* Shadows */
+    --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+    --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+    --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
   }
 
   .dark {
@@ -98,6 +128,85 @@
   }
 
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground font-sans;
+    font-size: var(--font-size-base);
+    line-height: 1.6;
+  }
+
+  /* Typography Scale Classes */
+  .text-xs { font-size: var(--font-size-xs); }
+  .text-sm { font-size: var(--font-size-sm); }
+  .text-base { font-size: var(--font-size-base); }
+  .text-lg { font-size: var(--font-size-lg); }
+  .text-xl { font-size: var(--font-size-xl); }
+  .text-2xl { font-size: var(--font-size-2xl); }
+  .text-3xl { font-size: var(--font-size-3xl); }
+  .text-4xl { font-size: var(--font-size-4xl); }
+
+  /* Ensure minimum readable font size */
+  h1, h2, h3, h4, h5, h6 {
+    font-size: var(--font-size-lg);
+    line-height: 1.4;
+    font-weight: 600;
+  }
+  
+  h1 { 
+    font-size: clamp(var(--font-size-2xl), 4vw, var(--font-size-4xl)); 
+  }
+  h2 { 
+    font-size: clamp(var(--font-size-xl), 3vw, var(--font-size-3xl)); 
+  }
+  h3 { 
+    font-size: clamp(var(--font-size-lg), 2.5vw, var(--font-size-2xl)); 
+  }
+  
+  /* Responsive font sizes */
+  .text-responsive-lg {
+    font-size: clamp(var(--font-size-base), 2vw, var(--font-size-lg));
+  }
+  
+  .text-responsive-xl {
+    font-size: clamp(var(--font-size-lg), 3vw, var(--font-size-xl));
+  }
+
+  /* Brand gradient utilities */
+  .bg-brand-gradient {
+    background: linear-gradient(135deg, hsl(var(--brand-primary)) 0%, hsl(var(--brand-secondary)) 100%);
+  }
+  
+  .text-brand-gradient {
+    background: linear-gradient(135deg, hsl(var(--brand-primary)) 0%, hsl(var(--brand-secondary)) 100%);
+    background-clip: text;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+}
+
+@layer components {
+  /* Layout Components */
+  .app-container {
+    max-width: var(--content-max-width);
+    margin: 0 auto;
+    padding: 0 var(--spacing-md);
+  }
+  
+  .app-header {
+    height: var(--header-height);
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid hsl(var(--border));
+  }
+  
+  /* Component Utilities */
+  .card-shadow {
+    box-shadow: var(--shadow-md);
+  }
+  
+  .hover-lift {
+    transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+  }
+  
+  .hover-lift:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-lg);
   }
 }

@@ -44,6 +44,14 @@ export default {
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",
         ring: "hsl(var(--ring))",
+        brand: {
+          primary: "hsl(var(--brand-primary))",
+          "primary-light": "hsl(var(--brand-primary-light))",
+          secondary: "hsl(var(--brand-secondary))",
+          "secondary-light": "hsl(var(--brand-secondary-light))",
+          accent: "hsl(var(--brand-accent))",
+          "accent-light": "hsl(var(--brand-accent-light))",
+        },
         chart: {
           "1": "hsl(var(--chart-1))",
           "2": "hsl(var(--chart-2))",

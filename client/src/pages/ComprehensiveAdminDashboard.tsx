@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { AdminLayout } from '@/components/admin/AdminLayout';
+import { AdminLayout } from '@/components/layout/AdminLayout';
 import { DataTable, Column } from '@/components/admin/DataTable';
 import { FormModal, FormField } from '@/components/admin/FormModal';
 import { ConfirmationDialog } from '@/components/admin/ConfirmationDialog';
