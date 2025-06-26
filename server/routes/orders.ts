@@ -2,6 +2,7 @@ import type { Express } from "express";
 import { eq, and, desc } from "drizzle-orm";
 import { db, schema } from "../db";
 import { nanoid } from "nanoid";
+import { z } from "zod";
 import { createOrderSchema, updateOrderSchema, idParamSchema, paginationQuerySchema } from "../../shared/schema";
 import { validateBody, validateParams, validateQuery, rateLimit, sanitizeInputs } from "../middleware/validation";
 import { authenticate, requireAuth, requireShopOwnership, optionalAuth } from "../middleware/auth";
@@ -10,7 +11,6 @@ export function registerOrderRoutes(app: Express) {
   // Get all orders for a shop (requires shop ownership)
   app.get('/api/shops/:shopId/orders', 
     authenticate,
-    validateParams(idParamSchema.pick({ id: true }).extend({ shopId: idParamSchema.shape.id })),
     requireShopOwnership,
     async (req, res) => {
       try {
@@ -27,6 +27,7 @@ export function registerOrderRoutes(app: Express) {
         }
         
         const orders = await query;
+        
         res.json(orders);
       } catch (error) {
         console.error('Error fetching orders:', error);
@@ -65,23 +66,28 @@ export function registerOrderRoutes(app: Express) {
   // Create order/reservation
   app.post('/api/orders', async (req, res) => {
     try {
-      // Get product details to calculate total amount
-      let totalAmount = req.body.total_amount || 0;
-      
-      if (totalAmount === 0 && req.body.product_id) {
-        const [product] = await db.select().from(schema.products)
-          .where(eq(schema.products.id, req.body.product_id))
-          .limit(1);
-        
-        if (product) {
-          totalAmount = product.price * (req.body.quantity || 1);
-        }
+      if (!req.body.product_id) {
+        return res.status(400).json({ error: 'Product ID is required' });
       }
+      
+      // Get product details to validate and calculate total amount
+      const [product] = await db.select().from(schema.products)
+        .where(eq(schema.products.id, req.body.product_id))
+        .limit(1);
+      
+      if (!product) {
+        return res.status(404).json({ error: 'Product not found' });
+      }
+      
+      const quantity = req.body.quantity || 1;
+      const totalAmount = req.body.total_amount || (product.price * quantity);
       
       const orderData = {
         id: nanoid(),
         ...req.body,
+        shop_id: product.shop_id, // Ensure shop_id is set from product
         total_amount: totalAmount,
+        quantity,
         created_at: Date.now(),
         updated_at: Date.now()
       };
@@ -99,13 +105,44 @@ export function registerOrderRoutes(app: Express) {
   });
 
   // Update order status
-  app.patch('/api/orders/:id/status', async (req, res) => {
+  app.patch('/api/orders/:id/status', authenticate, async (req, res) => {
     try {
       const { id } = req.params;
       const { status } = req.body;
       
       if (!status || !['pending', 'reserved', 'in_progress', 'delivered', 'cancelled'].includes(status)) {
         return res.status(400).json({ error: 'Invalid status' });
+      }
+      
+      // First, get the order to verify shop ownership
+      const [existingOrder] = await db.select()
+        .from(schema.orders)
+        .where(eq(schema.orders.id, id))
+        .limit(1);
+      
+      if (!existingOrder) {
+        return res.status(404).json({ error: 'Order not found' });
+      }
+      
+      // Verify that the authenticated user owns the shop for this order
+      if (req.user?.role === 'merchant') {
+        if (req.user.shop_id && req.user.shop_id !== existingOrder.shop_id) {
+          return res.status(403).json({ error: 'You can only update orders for your own shop' });
+        }
+        
+        // For database users, check shop ownership
+        if (!req.user.shop_id) {
+          const [shop] = await db.select()
+            .from(schema.shops)
+            .where(eq(schema.shops.id, existingOrder.shop_id))
+            .limit(1);
+          
+          if (!shop || shop.owner_id !== req.user.id) {
+            return res.status(403).json({ error: 'You can only update orders for your own shop' });
+          }
+        }
+      } else if (req.user?.role !== 'admin') {
+        return res.status(403).json({ error: 'Only merchants and admins can update order status' });
       }
       
       const [updatedOrder] = await db.update(schema.orders)

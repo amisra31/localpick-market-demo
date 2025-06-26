@@ -9,6 +9,8 @@ import { DirectMessage, Shop, Product } from '@/types';
 import { toast } from '@/hooks/use-toast';
 import { MessageSquare, Send, X, User, Store, Loader2, Search, Users, Clock, Wifi, WifiOff } from 'lucide-react';
 import { useChatWebSocket } from '@/hooks/useChatWebSocket';
+import { enhancedDataService } from '@/services/enhancedDataService';
+import { userShopService } from '@/services/userShopService';
 
 interface CustomerConversation {
   customer_id: string;
@@ -20,12 +22,10 @@ interface CustomerConversation {
 
 interface MerchantChatInterfaceProps {
   shop: Shop;
-  merchantId: string;
 }
 
 export const MerchantChatInterface: React.FC<MerchantChatInterfaceProps> = ({
-  shop,
-  merchantId
+  shop
 }) => {
   const [conversations, setConversations] = useState<CustomerConversation[]>([]);
   const [selectedConversation, setSelectedConversation] = useState<CustomerConversation | null>(null);
@@ -115,14 +115,8 @@ export const MerchantChatInterface: React.FC<MerchantChatInterfaceProps> = ({
 
   const loadConversations = async () => {
     try {
-      // Use the new shop direct conversations endpoint
-      const response = await fetch(`/api/shops/${shop.id}/direct-conversations`);
-      if (response.ok) {
-        const conversations = await response.json();
-        setConversations(conversations);
-      } else {
-        console.error('Failed to load conversations:', response.status);
-      }
+      const conversations = await enhancedDataService.getShopDirectConversations(shop.id);
+      setConversations(conversations);
     } catch (error) {
       console.error('Error loading conversations:', error);
     }
@@ -131,11 +125,8 @@ export const MerchantChatInterface: React.FC<MerchantChatInterfaceProps> = ({
   const loadMessages = async (customerId: string) => {
     setIsLoading(true);
     try {
-      const response = await fetch(`/api/messages?customer_id=${customerId}&shop_id=${shop.id}`);
-      if (response.ok) {
-        const messagesData = await response.json();
-        setMessages(messagesData);
-      }
+      const messagesData = await enhancedDataService.getDirectMessages(customerId, shop.id);
+      setMessages(messagesData);
     } catch (error) {
       console.error('Error loading messages:', error);
     } finally {
@@ -145,9 +136,18 @@ export const MerchantChatInterface: React.FC<MerchantChatInterfaceProps> = ({
 
   const markMessagesAsRead = async (customerId: string) => {
     try {
+      const merchantId = userShopService.getCurrentMerchantId();
+      if (!merchantId) {
+        console.error('No merchant ID available for marking messages as read');
+        return;
+      }
+
       await fetch('/api/messages/mark-read', {
         method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          ...userShopService.getAuthHeaders()
+        },
         body: JSON.stringify({
           customer_id: customerId,
           shop_id: shop.id,
@@ -170,6 +170,17 @@ export const MerchantChatInterface: React.FC<MerchantChatInterfaceProps> = ({
     if (!newMessage.trim() || !selectedConversation || isSending) return;
 
     const messageContent = newMessage.trim();
+    const merchantId = userShopService.getCurrentMerchantId();
+    
+    if (!merchantId) {
+      toast({
+        title: 'Error',
+        description: 'User not authenticated',
+        variant: 'destructive'
+      });
+      return;
+    }
+
     setNewMessage('');
     setIsSending(true);
 
@@ -191,37 +202,24 @@ export const MerchantChatInterface: React.FC<MerchantChatInterfaceProps> = ({
     setTimeout(scrollToBottom, 100);
 
     try {
-      const messageData = {
-        customer_id: selectedConversation.customer_id,
-        shop_id: shop.id,
-        sender_id: merchantId,
-        sender_type: 'merchant' as const,
-        message: messageContent
-      };
-
-      const response = await fetch('/api/messages', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(messageData)
-      });
-
-      if (response.ok) {
-        const serverMessage = await response.json();
-        
-        // Replace optimistic message with server message
-        setMessages(prev => prev.map(msg => 
-          msg.id === optimisticMessage.id ? serverMessage : msg
-        ));
-        
-        // Update conversation with latest message
-        setConversations(prev => prev.map(conv => 
-          conv.customer_id === selectedConversation.customer_id
-            ? { ...conv, last_message: serverMessage, last_activity: serverMessage.created_at }
-            : conv
-        ));
-      } else {
-        throw new Error('Failed to send message');
-      }
+      const serverMessage = await enhancedDataService.sendDirectMessage(
+        selectedConversation.customer_id,
+        shop.id,
+        'merchant',
+        messageContent
+      );
+      
+      // Replace optimistic message with server message
+      setMessages(prev => prev.map(msg => 
+        msg.id === optimisticMessage.id ? serverMessage : msg
+      ));
+      
+      // Update conversation with latest message
+      setConversations(prev => prev.map(conv => 
+        conv.customer_id === selectedConversation.customer_id
+          ? { ...conv, last_message: serverMessage, last_activity: serverMessage.created_at }
+          : conv
+      ));
     } catch (error) {
       console.error('Error sending message:', error);
       

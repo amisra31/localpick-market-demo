@@ -95,10 +95,21 @@ export const CustomerContact: React.FC<CustomerContactProps> = ({ shop, orders }
 
     if (!recentOrder) return;
 
+    // Get current merchant ID instead of using shop.ownerId
+    const merchantId = enhancedDataService.getCurrentMerchantId();
+    if (!merchantId) {
+      toast({
+        title: "Error",
+        description: "User not authenticated",
+        variant: "destructive"
+      });
+      return;
+    }
+
     try {
       await enhancedDataService.sendOrderMessage(
         recentOrder.id,
-        shop.ownerId,
+        merchantId,
         'merchant',
         message
       );
@@ -289,7 +300,6 @@ export const CustomerContact: React.FC<CustomerContactProps> = ({ shop, orders }
           {shop ? (
             <MerchantChatInterface 
               shop={shop}
-              merchantId={shop.ownerId}
             />
           ) : (
             <Card>

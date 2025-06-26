@@ -3,6 +3,19 @@ import React, { createContext, useContext, useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import { clearNavigationCache } from '@/utils/roleNavigation';
 
+// Simple JWT creation for demo users (in production, this would be done server-side)
+const createDemoToken = (user: any) => {
+  const header = btoa(JSON.stringify({ alg: 'HS256', typ: 'JWT' }));
+  const payload = btoa(JSON.stringify({ 
+    userId: user.id, 
+    email: user.email, 
+    role: user.role,
+    exp: Math.floor(Date.now() / 1000) + (24 * 60 * 60) // 24 hours
+  }));
+  const signature = btoa('demo-signature'); // In production, use proper HMAC
+  return `${header}.${payload}.${signature}`;
+};
+
 export type UserRole = 'user' | 'merchant' | 'admin';
 
 export interface AuthUser {
@@ -11,6 +24,7 @@ export interface AuthUser {
   role: UserRole;
   shop_id?: string;
   name?: string;
+  token?: string;
 }
 
 interface AuthContextType {
@@ -43,7 +57,12 @@ const demoUsers = [
   { id: '3', email: 'admin@demo.com', password: 'demo123', role: 'admin' as UserRole, name: 'Admin Demo' },
   { id: 'owner_001', email: 'sarah@brooklynbites.com', password: 'demo123', role: 'merchant' as UserRole, name: 'Sarah Johnson', shop_id: 'shop_001' },
   { id: 'owner_002', email: 'mike@maplecrafts.com', password: 'demo123', role: 'merchant' as UserRole, name: 'Mike Chen', shop_id: 'shop_002' },
-  { id: 'owner_003', email: 'emma@sunsetsouvenirs.com', password: 'demo123', role: 'merchant' as UserRole, name: 'Emma Rodriguez', shop_id: 'shop_003' }
+  { id: 'owner_003', email: 'emma@sunsetsouvenirs.com', password: 'demo123', role: 'merchant' as UserRole, name: 'Emma Rodriguez', shop_id: 'shop_003' },
+  // Missing merchant accounts requested by user
+  { id: 'sticks_owner', email: 'sticks_coffee_shopowner@demo.com', password: 'demo123', role: 'merchant' as UserRole, name: 'Sticks Coffee Owner', shop_id: '6k-vyXS9iM97p7jCfXqVn' },
+  { id: 'yosemite_owner', email: 'yosemite_gifts_shopowner@demo.com', password: 'demo123', role: 'merchant' as UserRole, name: 'Yosemite Gifts Owner', shop_id: 'T1eJ-LdhpXprNSV0ZAFXq' },
+  { id: 'mariposa_owner', email: 'mariposa_marketplace_shopowner@demo.com', password: 'demo123', role: 'merchant' as UserRole, name: 'Mariposa Marketplace Owner', shop_id: 'BByngmaE_569eC_jxc6d6' },
+  { id: 'cinnamon_owner', email: 'cinnamon_roll_bakery_shopowner@demo.com', password: 'demo123', role: 'merchant' as UserRole, name: 'Cinnamon Roll Bakery Owner', shop_id: 'nFL7pcsejHPWuV3QgaOfa' }
 ];
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -79,12 +98,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
               const parsedUser = JSON.parse(savedUser);
               // Verify this is a demo user or valid session
               if (parsedUser && (demoUsers.some(u => u.email === parsedUser.email) || parsedUser.id)) {
+                // Ensure demo users have tokens
+                if (!parsedUser.token && demoUsers.some(u => u.email === parsedUser.email)) {
+                  const demoUser = demoUsers.find(u => u.email === parsedUser.email);
+                  if (demoUser) {
+                    parsedUser.token = createDemoToken(demoUser);
+                    localStorage.setItem('localpick_user', JSON.stringify(parsedUser));
+                    localStorage.setItem('localpick_token', parsedUser.token);
+                  }
+                }
                 setUser(parsedUser);
               } else {
                 localStorage.removeItem('localpick_user');
+                localStorage.removeItem('localpick_token');
               }
             } catch (error) {
               localStorage.removeItem('localpick_user');
+              localStorage.removeItem('localpick_token');
             }
           }
         }
@@ -159,11 +189,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         email: demoUser.email,
         role: demoUser.role,
         name: demoUser.name,
-        shop_id: demoUser.shop_id
+        shop_id: demoUser.shop_id,
+        token: createDemoToken(demoUser)
       };
       
       setUser(authUser);
       localStorage.setItem('localpick_user', JSON.stringify(authUser));
+      localStorage.setItem('localpick_token', authUser.token);
       
       return { data: { user: authUser }, error: null };
     }

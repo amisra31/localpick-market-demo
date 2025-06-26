@@ -8,6 +8,7 @@ interface AuthenticatedUser {
   email: string;
   role: 'admin' | 'merchant' | 'customer';
   name?: string;
+  shop_id?: string;
 }
 
 declare global {
@@ -19,6 +20,20 @@ declare global {
 }
 
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-in-production';
+
+// Demo users for server-side validation (must match client-side)
+const demoUsers = [
+  { id: '1', email: 'customer@demo.com', role: 'user', name: 'Customer' },
+  { id: '2', email: 'merchant@demo.com', role: 'merchant', name: 'Merchant Demo', shop_id: 'shop_001' },
+  { id: '3', email: 'admin@demo.com', role: 'admin', name: 'Admin Demo' },
+  { id: 'owner_001', email: 'sarah@brooklynbites.com', role: 'merchant', name: 'Sarah Johnson', shop_id: 'shop_001' },
+  { id: 'owner_002', email: 'mike@maplecrafts.com', role: 'merchant', name: 'Mike Chen', shop_id: 'shop_002' },
+  { id: 'owner_003', email: 'emma@sunsetsouvenirs.com', role: 'merchant', name: 'Emma Rodriguez', shop_id: 'shop_003' },
+  { id: 'sticks_owner', email: 'sticks_coffee_shopowner@demo.com', role: 'merchant', name: 'Sticks Coffee Owner', shop_id: '6k-vyXS9iM97p7jCfXqVn' },
+  { id: 'yosemite_owner', email: 'yosemite_gifts_shopowner@demo.com', role: 'merchant', name: 'Yosemite Gifts Owner', shop_id: 'T1eJ-LdhpXprNSV0ZAFXq' },
+  { id: 'mariposa_owner', email: 'mariposa_marketplace_shopowner@demo.com', role: 'merchant', name: 'Mariposa Marketplace Owner', shop_id: 'BByngmaE_569eC_jxc6d6' },
+  { id: 'cinnamon_owner', email: 'cinnamon_roll_bakery_shopowner@demo.com', role: 'merchant', name: 'Cinnamon Roll Bakery Owner', shop_id: 'nFL7pcsejHPWuV3QgaOfa' }
+];
 
 /**
  * Middleware to authenticate requests using JWT
@@ -34,6 +49,33 @@ export const authenticate = async (req: Request, res: Response, next: NextFuncti
     const token = authHeader.substring(7); // Remove 'Bearer ' prefix
     
     try {
+      // Try parsing as demo token first (base64 encoded)
+      const [header, payload, signature] = token.split('.');
+      if (header && payload && signature) {
+        try {
+          const decodedPayload = JSON.parse(atob(payload));
+          
+          // Check if this is a demo user token
+          if (decodedPayload.userId && decodedPayload.email && decodedPayload.role) {
+            const demoUser = demoUsers.find(u => u.id === decodedPayload.userId && u.email === decodedPayload.email);
+            
+            if (demoUser) {
+              req.user = {
+                id: demoUser.id,
+                email: demoUser.email,
+                role: demoUser.role as AuthenticatedUser['role'],
+                name: demoUser.name,
+                shop_id: demoUser.shop_id
+              };
+              return next();
+            }
+          }
+        } catch (demoError) {
+          // Not a demo token, try regular JWT
+        }
+      }
+      
+      // Try regular JWT verification
       const decoded = jwt.verify(token, JWT_SECRET) as any;
       
       // Verify user still exists in database
@@ -122,7 +164,15 @@ export const requireShopOwnership = async (req: Request, res: Response, next: Ne
       return res.status(400).json({ error: 'Shop ID required' });
     }
 
-    // Check if user owns this shop
+    // For demo users, check against their shop_id
+    if (req.user.shop_id) {
+      if (req.user.shop_id !== shopId) {
+        return res.status(403).json({ error: 'You can only access your own shop' });
+      }
+      return next();
+    }
+
+    // For database users, check shop ownership in database
     const shops = await db.select()
       .from(schema.shops)
       .where(eq(schema.shops.id, shopId));

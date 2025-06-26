@@ -1,5 +1,6 @@
 // Enhanced data service with real-time sync capabilities
 import { Shop, Product, Order, OrderMessage, OrderStatus } from '@/types';
+import { userShopService } from './userShopService';
 
 export class EnhancedDataService {
   private baseUrl = '/api';
@@ -9,6 +10,11 @@ export class EnhancedDataService {
   constructor() {
     // Initialize Server-Sent Events for real-time updates
     this.initializeSSE();
+  }
+
+  // Get authentication headers for API requests
+  private getAuthHeaders(): Record<string, string> {
+    return userShopService.getAuthHeaders();
   }
 
   private initializeSSE() {
@@ -53,7 +59,9 @@ export class EnhancedDataService {
   }
 
   async getProductsByShopId(shopId: string, includeArchived: boolean = false): Promise<Product[]> {
-    const response = await fetch(`${this.baseUrl}/shops/${shopId}/products?includeArchived=${includeArchived}`);
+    const response = await fetch(`${this.baseUrl}/shops/${shopId}/products?includeArchived=${includeArchived}`, {
+      headers: this.getAuthHeaders()
+    });
     if (!response.ok) throw new Error('Failed to fetch products');
     const dbProducts = await response.json();
     
@@ -177,6 +185,43 @@ export class EnhancedDataService {
     return shops.find(shop => shop.ownerId === ownerId) || null;
   }
 
+  async getShopForCurrentUser(): Promise<Shop | null> {
+    const user = userShopService.getCurrentUser();
+    if (!user) return null;
+    
+    // If user has a shop_id (demo users), fetch that shop directly
+    const shopId = userShopService.getCurrentUserShopId();
+    if (shopId) {
+      return await this.getShopById(shopId);
+    }
+    
+    // Fallback to existing logic for regular users
+    return await this.getShopByOwnerId(user.id);
+  }
+
+  /**
+   * Get the current merchant ID for the logged-in user
+   * This resolves ID mismatch issues by always using the actual user ID
+   */
+  getCurrentMerchantId(): string | null {
+    return userShopService.getCurrentMerchantId();
+  }
+
+  /**
+   * Make an authenticated API request
+   */
+  private async makeAuthenticatedRequest(url: string, options: RequestInit = {}): Promise<Response> {
+    const headers = {
+      ...this.getAuthHeaders(),
+      ...options.headers
+    };
+
+    return fetch(url, {
+      ...options,
+      headers
+    });
+  }
+
   async updateShop(id: string, shopData: Partial<Shop>): Promise<Shop> {
     const dbUpdateData = this.transformShopToDb(shopData);
     
@@ -249,10 +294,17 @@ export class EnhancedDataService {
   // ======= ORDERS API =======
   
   async getOrdersByShopId(shopId: string, type: string = 'all'): Promise<Order[]> {
-    const response = await fetch(`${this.baseUrl}/shops/${shopId}/orders?type=${type}`);
-    if (!response.ok) throw new Error('Failed to fetch orders');
-    const dbOrders = await response.json();
+    const response = await fetch(`${this.baseUrl}/shops/${shopId}/orders?type=${type}`, {
+      headers: this.getAuthHeaders()
+    });
     
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('Failed to fetch orders:', errorText);
+      throw new Error('Failed to fetch orders');
+    }
+    
+    const dbOrders = await response.json();
     return dbOrders.map((dbOrder: any) => this.transformOrder(dbOrder));
   }
 
@@ -286,7 +338,10 @@ export class EnhancedDataService {
   async updateOrderStatus(orderId: string, status: OrderStatus): Promise<Order> {
     const response = await fetch(`${this.baseUrl}/orders/${orderId}/status`, {
       method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 
+        'Content-Type': 'application/json',
+        ...this.getAuthHeaders()
+      },
       body: JSON.stringify({ status })
     });
     if (!response.ok) throw new Error('Failed to update order status');
@@ -322,7 +377,10 @@ export class EnhancedDataService {
     
     const response = await fetch(`${this.baseUrl}/orders`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 
+        'Content-Type': 'application/json',
+        ...this.getAuthHeaders()
+      },
       body: JSON.stringify(orderData)
     });
     if (!response.ok) throw new Error('Failed to create reservation');
@@ -366,7 +424,9 @@ export class EnhancedDataService {
   // ======= MESSAGES API =======
   
   async getOrderMessages(orderId: string): Promise<OrderMessage[]> {
-    const response = await fetch(`${this.baseUrl}/orders/${orderId}/messages`);
+    const response = await fetch(`${this.baseUrl}/orders/${orderId}/messages`, {
+      headers: this.getAuthHeaders()
+    });
     if (!response.ok) throw new Error('Failed to fetch messages');
     const dbMessages = await response.json();
     
@@ -376,7 +436,10 @@ export class EnhancedDataService {
   async sendOrderMessage(orderId: string, senderId: string, senderType: 'merchant' | 'customer', message: string): Promise<OrderMessage> {
     const response = await fetch(`${this.baseUrl}/orders/${orderId}/messages`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 
+        'Content-Type': 'application/json',
+        ...this.getAuthHeaders()
+      },
       body: JSON.stringify({
         sender_id: senderId,
         sender_type: senderType,
@@ -392,6 +455,53 @@ export class EnhancedDataService {
     this.notifySubscribers('message:sent', orderMessage);
     
     return orderMessage;
+  }
+
+  // Get conversations for a shop (merchant view)
+  async getShopConversations(shopId: string): Promise<any[]> {
+    const response = await fetch(`${this.baseUrl}/shops/${shopId}/direct-conversations`, {
+      headers: this.getAuthHeaders()
+    });
+    if (!response.ok) throw new Error('Failed to fetch shop conversations');
+    return await response.json();
+  }
+
+  // Get messages between customer and shop
+  async getDirectMessages(customerId: string, shopId: string): Promise<any[]> {
+    const response = await this.makeAuthenticatedRequest(`${this.baseUrl}/messages?customer_id=${customerId}&shop_id=${shopId}`);
+    if (!response.ok) throw new Error('Failed to fetch direct messages');
+    return await response.json();
+  }
+
+  // Send direct message using current user as sender
+  async sendDirectMessage(customerId: string, shopId: string, senderType: 'merchant' | 'customer', message: string, productId?: string): Promise<any> {
+    // Get current user ID instead of requiring it as parameter
+    const senderId = userShopService.getCurrentUser()?.id;
+    if (!senderId) {
+      throw new Error('User not authenticated');
+    }
+
+    const response = await this.makeAuthenticatedRequest(`${this.baseUrl}/messages`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        customer_id: customerId,
+        shop_id: shopId,
+        product_id: productId,
+        sender_id: senderId,
+        sender_type: senderType,
+        message
+      })
+    });
+    if (!response.ok) throw new Error('Failed to send direct message');
+    return await response.json();
+  }
+
+  // Get shop conversations with authentication
+  async getShopDirectConversations(shopId: string): Promise<any[]> {
+    const response = await this.makeAuthenticatedRequest(`${this.baseUrl}/shops/${shopId}/direct-conversations`);
+    if (!response.ok) throw new Error('Failed to fetch shop conversations');
+    return await response.json();
   }
 
   // ======= TRANSFORMATION METHODS =======

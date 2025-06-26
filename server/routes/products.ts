@@ -2,14 +2,17 @@ import type { Express } from "express";
 import { eq, and, isNull } from "drizzle-orm";
 import { db, schema } from "../db";
 import { nanoid } from "nanoid";
+import { authenticate, requireShopOwnership } from "../middleware/auth";
 
 export function registerProductRoutes(app: Express) {
-  // Get products for a shop (exclude archived by default)
-  app.get('/api/shops/:shopId/products', async (req, res) => {
+  // Get products for a shop (exclude archived by default) - requires authentication
+  app.get('/api/shops/:shopId/products', authenticate, requireShopOwnership, async (req, res) => {
     try {
       const { shopId } = req.params;
       const { includeArchived = 'false' } = req.query;
       
+      // For merchants, only show products from their own shop
+      // (shop ownership is already verified by requireShopOwnership middleware)
       let query = db.select().from(schema.products).where(eq(schema.products.shop_id, shopId));
       
       if (includeArchived !== 'true') {

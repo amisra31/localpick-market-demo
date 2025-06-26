@@ -78,13 +78,15 @@ const NewShopOwnerDashboard = () => {
   const loadData = async () => {
     setIsLoading(true);
     try {
-      const ownerShop = await enhancedDataService.getShopByOwnerId(user!.id);
+      const ownerShop = await enhancedDataService.getShopForCurrentUser();
+      
       if (ownerShop) {
         setShop(ownerShop);
         await loadProducts(ownerShop.id);
         await loadOrders(ownerShop.id);
       }
     } catch (error) {
+      console.error('Failed to load dashboard data:', error);
       toast({
         title: "Error",
         description: "Failed to load dashboard data",

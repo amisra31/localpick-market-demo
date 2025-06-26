@@ -3,6 +3,7 @@ import { eq } from "drizzle-orm";
 import { db, schema } from "../db";
 import { nanoid } from "nanoid";
 import { getWebSocketManager } from "../websocket";
+import { authenticate, requireShopOwnership, requireMerchant } from "../middleware/auth";
 
 // Image URL processing utilities for Google Drive URLs
 const convertGoogleDriveUrl = (url: string): string => {
@@ -95,7 +96,7 @@ export function registerShopRoutes(app: Express) {
   });
 
   // Update shop
-  app.put('/api/shops/:id', async (req, res) => {
+  app.put('/api/shops/:id', authenticate, requireShopOwnership, async (req, res) => {
     try {
       const { id } = req.params;
       const updateData = {
@@ -125,7 +126,7 @@ export function registerShopRoutes(app: Express) {
   });
 
   // Update shop operating hours
-  app.put('/api/shops/:id/hours', async (req, res) => {
+  app.put('/api/shops/:id/hours', authenticate, requireShopOwnership, async (req, res) => {
     try {
       const { id } = req.params;
       const { hours } = req.body;
@@ -171,7 +172,7 @@ export function registerShopRoutes(app: Express) {
   });
 
   // Get shop operating hours
-  app.get('/api/shops/:id/hours', async (req, res) => {
+  app.get('/api/shops/:id/hours', authenticate, requireShopOwnership, async (req, res) => {
     try {
       const { id } = req.params;
       const operatingHours = await db.select().from(schema.operating_hours).where(eq(schema.operating_hours.shop_id, id));
@@ -183,7 +184,7 @@ export function registerShopRoutes(app: Express) {
   });
 
   // Shop analytics/stats
-  app.get('/api/shops/:id/stats', async (req, res) => {
+  app.get('/api/shops/:id/stats', authenticate, requireShopOwnership, async (req, res) => {
     try {
       const { id } = req.params;
       

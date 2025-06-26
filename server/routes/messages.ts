@@ -3,10 +3,11 @@ import { eq, and, desc, not } from "drizzle-orm";
 import { db, schema } from "../db";
 import { nanoid } from "nanoid";
 import { getWebSocketManager } from "../websocket";
+import { authenticate, requireShopOwnership } from "../middleware/auth";
 
 export function registerMessageRoutes(app: Express) {
   // Get all direct message conversations for a shop (merchant view)
-  app.get('/api/shops/:shopId/direct-conversations', async (req, res) => {
+  app.get('/api/shops/:shopId/direct-conversations', authenticate, requireShopOwnership, async (req, res) => {
     try {
       const { shopId } = req.params;
       
@@ -302,7 +303,7 @@ export function registerMessageRoutes(app: Express) {
   });
 
   // Get all conversations for a shop (merchant view)
-  app.get('/api/shops/:shopId/conversations', async (req, res) => {
+  app.get('/api/shops/:shopId/conversations', authenticate, requireShopOwnership, async (req, res) => {
     try {
       const { shopId } = req.params;
       
