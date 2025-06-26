@@ -157,6 +157,19 @@ export function registerOrderRoutes(app: Express) {
         return res.status(404).json({ error: 'Order not found' });
       }
       
+      // Log the status change
+      const statusChangeId = nanoid();
+      await db.insert(schema.order_status_changes).values({
+        id: statusChangeId,
+        order_id: id,
+        old_status: existingOrder.status,
+        new_status: status,
+        changed_by: req.user?.id || 'unknown',
+        changed_by_type: req.user?.role === 'merchant' ? 'merchant' : req.user?.role === 'admin' ? 'admin' : 'customer',
+        notes: req.body.notes || null,
+        created_at: Date.now()
+      });
+      
       // Real-time sync: Broadcast to all relevant users
       // - Customer (if it's their order)
       // - Admin dashboard
@@ -194,6 +207,36 @@ export function registerOrderRoutes(app: Express) {
     } catch (error) {
       console.error('Error updating order:', error);
       res.status(500).json({ error: 'Failed to update order' });
+    }
+  });
+
+  // Delete order (for customer cancellation)
+  app.delete('/api/orders/:id', authenticate, async (req, res) => {
+    try {
+      const { id } = req.params;
+      
+      // First, get the order to verify customer ownership
+      const [existingOrder] = await db.select()
+        .from(schema.orders)
+        .where(eq(schema.orders.id, id))
+        .limit(1);
+      
+      if (!existingOrder) {
+        return res.status(404).json({ error: 'Order not found' });
+      }
+      
+      // Verify that the authenticated user is the customer who made this order
+      if (req.user?.id !== existingOrder.customer_id) {
+        return res.status(403).json({ error: 'You can only cancel your own orders' });
+      }
+      
+      // Delete the order
+      await db.delete(schema.orders).where(eq(schema.orders.id, id));
+      
+      res.json({ message: 'Order cancelled successfully' });
+    } catch (error) {
+      console.error('Error deleting order:', error);
+      res.status(500).json({ error: 'Failed to cancel order' });
     }
   });
 

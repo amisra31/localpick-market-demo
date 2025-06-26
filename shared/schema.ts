@@ -117,6 +117,27 @@ export const reservations = sqliteTable("reservations", {
   created_at: integer("created_at").notNull().$defaultFn(() => Date.now()),
 });
 
+// Wishlist table - customer product wishlists
+export const wishlist_items = sqliteTable("wishlist_items", {
+  id: text("id").primaryKey(),
+  customer_id: text("customer_id").notNull(), // References users.id
+  product_id: text("product_id").references(() => products.id, { onDelete: "cascade" }).notNull(),
+  shop_id: text("shop_id").references(() => shops.id, { onDelete: "cascade" }).notNull(),
+  created_at: integer("created_at").notNull().$defaultFn(() => Date.now()),
+});
+
+// Order status change log table - track status changes
+export const order_status_changes = sqliteTable("order_status_changes", {
+  id: text("id").primaryKey(),
+  order_id: text("order_id").references(() => orders.id, { onDelete: "cascade" }).notNull(),
+  old_status: text("old_status"),
+  new_status: text("new_status", { enum: ["pending", "reserved", "in_progress", "delivered", "cancelled"] }).notNull(),
+  changed_by: text("changed_by").notNull(), // User ID who made the change
+  changed_by_type: text("changed_by_type", { enum: ["customer", "merchant", "admin"] }).notNull(),
+  notes: text("notes"), // Optional notes about the change
+  created_at: integer("created_at").notNull().$defaultFn(() => Date.now()),
+});
+
 // Zod schemas for validation
 export const insertUserSchema = createInsertSchema(users).pick({
   email: true,
@@ -282,6 +303,23 @@ export const insertReservationSchema = createInsertSchema(reservations).pick({
   status: true,
 });
 
+export const insertWishlistItemSchema = createInsertSchema(wishlist_items).pick({
+  id: true,
+  customer_id: true,
+  product_id: true,
+  shop_id: true,
+});
+
+export const insertOrderStatusChangeSchema = createInsertSchema(order_status_changes).pick({
+  id: true,
+  order_id: true,
+  old_status: true,
+  new_status: true,
+  changed_by: true,
+  changed_by_type: true,
+  notes: true,
+});
+
 // TypeScript types
 export type User = typeof users.$inferSelect;
 export type InsertUser = z.infer<typeof insertUserSchema>;
@@ -304,3 +342,9 @@ export type InsertOperatingHours = z.infer<typeof insertOperatingHoursSchema>;
 
 export type Reservation = typeof reservations.$inferSelect;
 export type InsertReservation = z.infer<typeof insertReservationSchema>;
+
+export type WishlistItem = typeof wishlist_items.$inferSelect;
+export type InsertWishlistItem = z.infer<typeof insertWishlistItemSchema>;
+
+export type OrderStatusChange = typeof order_status_changes.$inferSelect;
+export type InsertOrderStatusChange = z.infer<typeof insertOrderStatusChangeSchema>;

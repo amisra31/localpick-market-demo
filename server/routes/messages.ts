@@ -6,6 +6,91 @@ import { getWebSocketManager } from "../websocket";
 import { authenticate, requireShopOwnership } from "../middleware/auth";
 
 export function registerMessageRoutes(app: Express) {
+  // Get chat threads for a customer - API endpoint as requested
+  app.get('/api/chat/threads', authenticate, async (req, res) => {
+    try {
+      const { user_id } = req.query;
+      
+      if (!user_id) {
+        return res.status(400).json({ error: 'user_id is required' });
+      }
+
+      // Get all shops the customer has chatted with
+      const allMessages = await db
+        .select({
+          shop_id: schema.direct_messages.shop_id,
+          shop_name: schema.shops.name,
+          shop_category: schema.shops.category,
+          message_id: schema.direct_messages.id,
+          message: schema.direct_messages.message,
+          sender_type: schema.direct_messages.sender_type,
+          is_read: schema.direct_messages.is_read,
+          created_at: schema.direct_messages.created_at
+        })
+        .from(schema.direct_messages)
+        .leftJoin(schema.shops, eq(schema.direct_messages.shop_id, schema.shops.id))
+        .where(eq(schema.direct_messages.customer_id, user_id as string))
+        .orderBy(desc(schema.direct_messages.created_at));
+
+      // Group by shop_id to create threads
+      const threadMap = new Map();
+      
+      allMessages.forEach(msg => {
+        if (!threadMap.has(msg.shop_id)) {
+          threadMap.set(msg.shop_id, {
+            shop_id: msg.shop_id,
+            shop_name: msg.shop_name,
+            shop_category: msg.shop_category,
+            last_message: {
+              id: msg.message_id,
+              message: msg.message,
+              sender_type: msg.sender_type,
+              created_at: msg.created_at
+            },
+            unread_count: 0,
+            last_activity: msg.created_at,
+            messages: []
+          });
+        }
+        
+        const thread = threadMap.get(msg.shop_id);
+        
+        // Add message to thread history
+        thread.messages.push({
+          id: msg.message_id,
+          message: msg.message,
+          sender_type: msg.sender_type,
+          is_read: msg.is_read,
+          created_at: msg.created_at
+        });
+        
+        // Update last message if this is newer
+        if (msg.created_at > thread.last_activity) {
+          thread.last_message = {
+            id: msg.message_id,
+            message: msg.message,
+            sender_type: msg.sender_type,
+            created_at: msg.created_at
+          };
+          thread.last_activity = msg.created_at;
+        }
+        
+        // Count unread messages from merchants
+        if (!msg.is_read && msg.sender_type === 'merchant') {
+          thread.unread_count++;
+        }
+      });
+
+      // Convert to array and sort by last activity
+      const threads = Array.from(threadMap.values())
+        .sort((a, b) => b.last_activity - a.last_activity);
+
+      res.json(threads);
+    } catch (error) {
+      console.error('Error fetching chat threads:', error);
+      res.status(500).json({ error: 'Failed to fetch chat threads' });
+    }
+  });
   // Get all direct message conversations for a shop (merchant view)
   app.get('/api/shops/:shopId/direct-conversations', authenticate, requireShopOwnership, async (req, res) => {
     try {

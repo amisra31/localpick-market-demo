@@ -2,30 +2,23 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { DirectMessage, Product, Shop } from '@/types';
+import { DirectMessage } from '@/types';
 import { useAuth } from '@/contexts/AuthContext';
 import { enhancedDataService } from '@/services/enhancedDataService';
 import { useChatWebSocket } from '@/hooks/useChatWebSocket';
 import { toast } from '@/hooks/use-toast';
-import { Send, User, Store, Loader2, ArrowLeft, X } from 'lucide-react';
+import { Send, User, Store, Loader2, ArrowLeft } from 'lucide-react';
 
-interface CustomerMerchantChatProps {
-  isOpen: boolean;
-  onClose: () => void;
-  product?: Product;
-  shop: Shop;
-  customerId?: string;
-  customerName?: string;
+interface CustomerChatInterfaceProps {
+  shopId: string;
+  shopName: string;
+  onBack?: () => void;
 }
 
-export const CustomerMerchantChat: React.FC<CustomerMerchantChatProps> = ({
-  isOpen,
-  onClose,
-  product,
-  shop,
-  customerId,
-  customerName
+export const CustomerChatInterface: React.FC<CustomerChatInterfaceProps> = ({
+  shopId,
+  shopName,
+  onBack
 }) => {
   const { user } = useAuth();
   const [messages, setMessages] = useState<DirectMessage[]>([]);
@@ -48,7 +41,7 @@ export const CustomerMerchantChat: React.FC<CustomerMerchantChatProps> = ({
         const newMsg = message.payload;
         
         // Check if this message belongs to our chat
-        if (newMsg.shop_id === shop.id && newMsg.customer_id === user?.id) {
+        if (newMsg.shop_id === shopId && newMsg.customer_id === user?.id) {
           setMessages(prev => {
             // Avoid duplicates
             const exists = prev.some(m => m.id === newMsg.id);
@@ -71,22 +64,22 @@ export const CustomerMerchantChat: React.FC<CustomerMerchantChatProps> = ({
   });
 
   useEffect(() => {
-    if (user && isOpen) {
+    if (user) {
       loadMessages();
       
       // Join the chat session
       if (isConnected) {
-        joinChat(user.id, shop.id);
+        joinChat(user.id, shopId);
       }
     }
     
     // Leave chat when component unmounts or shop changes
     return () => {
       if (user && isConnected) {
-        leaveChat(user.id, shop.id);
+        leaveChat(user.id, shopId);
       }
     };
-  }, [shop.id, user, isConnected, isOpen]);
+  }, [shopId, user, isConnected]);
 
   useEffect(() => {
     scrollToBottom();
@@ -101,7 +94,7 @@ export const CustomerMerchantChat: React.FC<CustomerMerchantChatProps> = ({
     
     setIsLoading(true);
     try {
-      const messagesData = await enhancedDataService.getDirectMessages(user.id, shop.id);
+      const messagesData = await enhancedDataService.getDirectMessages(user.id, shopId);
       setMessages(messagesData);
     } catch (error) {
       console.error('Error loading messages:', error);
@@ -121,8 +114,8 @@ export const CustomerMerchantChat: React.FC<CustomerMerchantChatProps> = ({
     const optimisticMessage: DirectMessage = {
       id: `temp_${Date.now()}`,
       customer_id: user.id,
-      shop_id: shop.id,
-      product_id: product?.id,
+      shop_id: shopId,
+      product_id: undefined,
       sender_id: user.id,
       sender_type: 'customer',
       message: messageContent,
@@ -137,10 +130,9 @@ export const CustomerMerchantChat: React.FC<CustomerMerchantChatProps> = ({
     try {
       const serverMessage = await enhancedDataService.sendDirectMessage(
         user.id,
-        shop.id,
+        shopId,
         'customer',
-        messageContent,
-        product?.id
+        messageContent
       );
       
       // Replace optimistic message with server message
@@ -186,26 +178,24 @@ export const CustomerMerchantChat: React.FC<CustomerMerchantChatProps> = ({
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl h-[600px] flex flex-col p-0">
-        <DialogHeader className="p-4 border-b">
-          <DialogTitle className="flex items-center gap-2">
-            <Store className="w-5 h-5 text-gray-400" />
-            <div className="flex-1">
-              <div>{shop.name}</div>
-              {product && (
-                <div className="text-sm text-gray-500">
-                  About: {product.name}
-                </div>
-              )}
-            </div>
-            {isConnected && (
-              <div className="text-xs text-gray-500">
-                🟢 Connected
-              </div>
-            )}
-          </DialogTitle>
-        </DialogHeader>
+    <div className="flex flex-col h-full">
+      {/* Chat Header */}
+      <div className="p-4 border-b bg-white">
+        <div className="flex items-center gap-3">
+          {onBack && (
+            <Button variant="ghost" size="sm" onClick={onBack}>
+              <ArrowLeft className="w-4 h-4" />
+            </Button>
+          )}
+          <Store className="w-5 h-5 text-gray-400" />
+          <div>
+            <h3 className="font-medium">{shopName}</h3>
+            <p className="text-sm text-gray-500">
+              {isConnected ? 'Connected' : 'Connecting...'}
+            </p>
+          </div>
+        </div>
+      </div>
 
       {/* Messages */}
       <ScrollArea className="flex-1 p-4">
@@ -238,7 +228,7 @@ export const CustomerMerchantChat: React.FC<CustomerMerchantChatProps> = ({
                         <Store className="w-3 h-3" />
                       )}
                       <span className="text-xs opacity-75">
-                        {isFromCustomer ? 'You' : shop.name}
+                        {isFromCustomer ? 'You' : shopName}
                       </span>
                     </div>
                     <p className="text-sm whitespace-pre-wrap">{message.message}</p>
@@ -254,32 +244,31 @@ export const CustomerMerchantChat: React.FC<CustomerMerchantChatProps> = ({
         )}
       </ScrollArea>
 
-        {/* Message Input */}
-        <div className="p-4 border-t bg-gray-50">
-          <div className="flex gap-2">
-            <Input
-              value={newMessage}
-              onChange={(e) => setNewMessage(e.target.value)}
-              onKeyPress={handleKeyPress}
-              placeholder="Type your message..."
-              disabled={isSending}
-              className="flex-1"
-            />
-            <Button
-              onClick={sendMessage}
-              disabled={!newMessage.trim() || isSending}
-              size="sm"
-              className="px-3"
-            >
-              {isSending ? (
-                <Loader2 className="w-4 h-4 animate-spin" />
-              ) : (
-                <Send className="w-4 h-4" />
-              )}
-            </Button>
-          </div>
+      {/* Message Input */}
+      <div className="p-4 border-t bg-gray-50">
+        <div className="flex gap-2">
+          <Input
+            value={newMessage}
+            onChange={(e) => setNewMessage(e.target.value)}
+            onKeyPress={handleKeyPress}
+            placeholder="Type your message..."
+            disabled={isSending || !isConnected}
+            className="flex-1"
+          />
+          <Button
+            onClick={sendMessage}
+            disabled={!newMessage.trim() || isSending || !isConnected}
+            size="sm"
+            className="px-3"
+          >
+            {isSending ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : (
+              <Send className="w-4 h-4" />
+            )}
+          </Button>
         </div>
-      </DialogContent>
-    </Dialog>
+      </div>
+    </div>
   );
 };

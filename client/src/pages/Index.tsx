@@ -9,8 +9,9 @@ import { AuthHeader } from "@/components/auth/AuthHeader";
 import { useAuth } from "@/contexts/AuthContext";
 import { enhancedDataService } from "@/services/enhancedDataService";
 import { useProductSync, useShopSync } from "@/hooks/useRealTimeSync";
+import { useChatThreads } from "@/hooks/useChatThreads";
 import { ProductWithShop, Shop } from "@/types";
-import { Search, MapPin, Clock, ShoppingBag, Eye, Store, Settings, BarChart3, Navigation, Coffee, Gift, Smartphone, Baby, Dumbbell, Plus, ChevronLeft, ChevronRight } from "lucide-react";
+import { Search, MapPin, Clock, ShoppingBag, Eye, Store, Settings, BarChart3, Navigation, Coffee, Gift, Smartphone, Baby, Dumbbell, Plus, ChevronLeft, ChevronRight, MessageSquare } from "lucide-react";
 import { ProductCard } from "@/components/ProductCard";
 import { SimpleLocationAutocomplete } from "@/components/SimpleLocationAutocomplete";
 import { ImageWithFallback } from "@/components/ui/ImageWithFallback";
@@ -31,6 +32,10 @@ const Index = () => {
   const [userLocation, setUserLocation] = useState<string>('Mariposa, CA');
   const [locationCoordinates, setLocationCoordinates] = useState<{lat: number, lng: number} | null>(null);
   const [selectedShopId, setSelectedShopId] = useState<string | null>(null);
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  
+  // Chat threads for unread count
+  const { getTotalUnreadCount } = useChatThreads();
 
   // Redirect users to their appropriate dashboards based on role
   useEffect(() => {
@@ -75,7 +80,7 @@ const Index = () => {
     if (!isNavigationReload) {
       filterProducts();
     }
-  }, [products, searchQuery, categoryFilter, isNavigationReload]);
+  }, [products, searchQuery, categoryFilter, selectedShopId, isNavigationReload]);
 
   const loadProducts = async () => {
     if (isLoading) {
@@ -119,8 +124,14 @@ const Index = () => {
       );
     }
 
+    // Category filter
     if (categoryFilter !== "all") {
       filtered = filtered.filter(product => product.shop?.category === categoryFilter);
+    }
+
+    // Shop filter - filter by selected shop
+    if (selectedShopId) {
+      filtered = filtered.filter(product => product.shopId === selectedShopId);
     }
 
     // Ensure no duplicates in filtered results
@@ -321,11 +332,12 @@ const Index = () => {
           : null
       }));
       
-      // If there's a selected shop, move it to the top
-      let finalShopsList = nearbyShopsList;
+      // If there's a selected shop, move it to the top for visibility
+      let finalShopsList = [...nearbyShopsList];
       if (selectedShopId) {
         const selectedShopIndex = finalShopsList.findIndex(shop => shop.id === selectedShopId);
         if (selectedShopIndex > 0) {
+          // Remove selected shop from its current position and add to top
           const selectedShop = finalShopsList.splice(selectedShopIndex, 1)[0];
           finalShopsList.unshift(selectedShop);
         }
@@ -339,9 +351,30 @@ const Index = () => {
   };
 
   const handleCategoryClick = (category: string) => {
-    if (category === 'Coffee' || category === 'Gift') {
-      setCategoryFilter(category === 'Coffee' ? 'Food' : 'Gifts');
+    const filterValue = category === 'Coffee' ? 'Coffee shop' : category === 'Gift' ? 'Gift shop' : category;
+    
+    // Toggle behavior: if same category is clicked, turn off filter
+    if (selectedCategory === category) {
+      setCategoryFilter('all');
+      setSelectedCategory(null);
+    } else {
+      setCategoryFilter(filterValue);
+      setSelectedCategory(category);
     }
+  };
+
+  const handleShopClick = (shopId: string, shopName: string) => {
+    // Toggle behavior: if same shop is clicked, turn off filter
+    if (selectedShopId === shopId) {
+      setSelectedShopId(null);
+      setSearchQuery(''); // Clear search query when deselecting shop
+    } else {
+      setSelectedShopId(shopId);
+      setSearchQuery(shopName); // Set search query to shop name for visual feedback
+    }
+    
+    // Trigger shop list reorder when selection changes
+    loadNearbyShops();
   };
 
   // Real-time sync: Reload data when products or shops are updated
@@ -414,13 +447,26 @@ const Index = () => {
             {/* Right Side */}
             <div className="flex items-center space-x-3">
               {isAuthenticated && (
-                <Link to="/my-reservations">
-                  <Button variant="outline" size="default" className="gap-2 hover:bg-blue-50 transition-colors">
-                    <ShoppingBag className="w-4 h-4" />
-                    <span className="hidden sm:inline">My Reservations ({getReservationCount()})</span>
-                    <span className="sm:hidden">({getReservationCount()})</span>
-                  </Button>
-                </Link>
+                <>
+                  <Link to="/chat">
+                    <Button variant="outline" size="default" className="gap-2 hover:bg-blue-50 transition-colors relative">
+                      <MessageSquare className="w-4 h-4" />
+                      <span className="hidden sm:inline">Chat</span>
+                      {getTotalUnreadCount() > 0 && (
+                        <Badge variant="destructive" className="absolute -top-2 -right-2 h-5 min-w-[20px] text-xs">
+                          {getTotalUnreadCount()}
+                        </Badge>
+                      )}
+                    </Button>
+                  </Link>
+                  <Link to="/my-reservations">
+                    <Button variant="outline" size="default" className="gap-2 hover:bg-blue-50 transition-colors">
+                      <ShoppingBag className="w-4 h-4" />
+                      <span className="hidden sm:inline">My Reservations ({getReservationCount()})</span>
+                      <span className="sm:hidden">({getReservationCount()})</span>
+                    </Button>
+                  </Link>
+                </>
               )}
               <AuthHeader />
             </div>
@@ -438,7 +484,7 @@ const Index = () => {
               <Button
                 key={category.name}
                 onClick={() => category.enabled ? handleCategoryClick(category.name) : undefined}
-                variant={categoryFilter === (category.filter || category.name.toLowerCase()) ? "default" : "outline"}
+                variant={selectedCategory === category.name ? "default" : "outline"}
                 size="sm"
                 className={`flex items-center gap-2 whitespace-nowrap ${
                   category.enabled 
@@ -477,11 +523,7 @@ const Index = () => {
                         ? 'bg-blue-50 border-blue-200 ring-2 ring-blue-200' 
                         : 'hover:bg-gray-50 border-gray-100'
                     }`}
-                    onClick={() => {
-                      // Set selected shop and search for it
-                      setSelectedShopId(shop.id);
-                      setSearchQuery(shop.name);
-                    }}
+                    onClick={() => handleShopClick(shop.id, shop.name)}
                   >
                     <div className="w-10 h-10 bg-gradient-to-br from-blue-100 to-blue-200 rounded-lg flex items-center justify-center">
                       <Store className="w-5 h-5 text-blue-600" />
@@ -607,6 +649,8 @@ const Index = () => {
                     onClick={() => {
                       setSearchQuery("");
                       setCategoryFilter("all");
+                      setSelectedCategory(null);
+                      setSelectedShopId(null);
                     }}
                     variant="outline"
                   >

@@ -11,6 +11,8 @@ import ManageShop from "./pages/ManageShop";
 import ShopOwnerLogin from "./pages/ShopOwnerLogin";
 import NewShopOwnerDashboard from "./pages/NewShopOwnerDashboard";
 import CustomerReservations from "./pages/CustomerReservations";
+import CustomerChat from "./pages/CustomerChat";
+import ChatOverview from "./pages/ChatOverview";
 import AdminDashboard from "./pages/AdminDashboard";
 import AdminPortal from "./pages/AdminPortal";
 import EnhancedAdminDashboard from "./pages/EnhancedAdminDashboard";
@@ -43,6 +45,16 @@ const App = () => (
             <Route path="/my-reservations" element={
               <ProtectedRoute requiredRole="user">
                 <CustomerReservations />
+              </ProtectedRoute>
+            } />
+            <Route path="/customer-chat" element={
+              <ProtectedRoute requiredRole="user">
+                <CustomerChat />
+              </ProtectedRoute>
+            } />
+            <Route path="/chat" element={
+              <ProtectedRoute requiredRole="user">
+                <ChatOverview />
               </ProtectedRoute>
             } />
             

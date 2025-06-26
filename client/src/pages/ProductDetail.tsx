@@ -9,9 +9,10 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useAuth } from "@/contexts/AuthContext";
 import { enhancedDataService } from "@/services/enhancedDataService";
+import { useChatThreads } from "@/hooks/useChatThreads";
 import { Product, Shop } from "@/types";
 import { toast } from "@/hooks/use-toast";
-import { ArrowLeft, MapPin, Clock, ShoppingBag, ExternalLink, LogIn, MessageSquare, Navigation, Heart, Share, Copy, Check } from "lucide-react";
+import { ArrowLeft, MapPin, Clock, ShoppingBag, ExternalLink, LogIn, MessageSquare, Navigation, Heart, Share, Copy, Check, Search } from "lucide-react";
 import { SignOutButton } from "@/components/SignOutButton";
 import { ImageWithFallback } from "@/components/ui/ImageWithFallback";
 import { CustomerMerchantChat } from "@/components/CustomerMerchantChat";
@@ -32,6 +33,10 @@ const ProductDetail = () => {
   const [addressCopied, setAddressCopied] = useState(false);
   const [plusCodeCopied, setPlusCodeCopied] = useState(false);
   const [isWishlisted, setIsWishlisted] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  
+  // Chat threads for unread count
+  const { getTotalUnreadCount } = useChatThreads();
 
   const getReservationCount = () => {
     const reservations = JSON.parse(localStorage.getItem('localpick_customer_reservations') || '[]');
@@ -46,6 +51,12 @@ const ProductDetail = () => {
 
     loadProductData();
   }, [id, navigate]);
+
+  useEffect(() => {
+    if (user && product) {
+      checkWishlistStatus();
+    }
+  }, [user, product]);
 
   const loadProductData = async () => {
     try {
@@ -157,12 +168,78 @@ const ProductDetail = () => {
     openDirections(shop.location);
   };
 
-  const handleToggleWishlist = () => {
-    setIsWishlisted(!isWishlisted);
-    toast({
-      title: isWishlisted ? "Removed from wishlist" : "Added to wishlist",
-      description: isWishlisted ? "Product removed from your wishlist" : "Product saved to your wishlist"
-    });
+  const checkWishlistStatus = async () => {
+    if (!user || !product) return;
+    
+    try {
+      const response = await fetch(`/api/customers/${user.id}/wishlist`, {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('localpick_token')}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      if (response.ok) {
+        const wishlistItems = await response.json();
+        const isProductWishlisted = wishlistItems.some((item: any) => item.productId === product.id);
+        setIsWishlisted(isProductWishlisted);
+      }
+    } catch (error) {
+      console.error('Failed to check wishlist status:', error);
+    }
+  };
+
+  const handleToggleWishlist = async () => {
+    if (!user || !product || !shop) return;
+
+    try {
+      if (isWishlisted) {
+        // Remove from wishlist - use product ID to find and delete
+        const response = await fetch(`/api/customers/${user.id}/wishlist/product/${product.id}`, {
+          method: 'DELETE',
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('localpick_token')}`,
+            'Content-Type': 'application/json'
+          }
+        });
+        
+        if (response.ok) {
+          setIsWishlisted(false);
+          toast({
+            title: "Removed from wishlist",
+            description: "Product removed from your wishlist"
+          });
+        }
+      } else {
+        // Add to wishlist
+        const response = await fetch(`/api/customers/${user.id}/wishlist`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('localpick_token')}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            productId: product.id,
+            shopId: shop.id
+          })
+        });
+        
+        if (response.ok) {
+          setIsWishlisted(true);
+          toast({
+            title: "Added to wishlist",
+            description: "Product saved to your wishlist"
+          });
+        }
+      }
+    } catch (error) {
+      console.error('Wishlist error:', error);
+      toast({
+        title: "Error",
+        description: "Failed to update wishlist",
+        variant: "destructive"
+      });
+    }
   };
 
   const handleShareProduct = async () => {
@@ -176,6 +253,13 @@ const ProductDetail = () => {
         description: "Please try again",
         variant: "destructive" 
       });
+    }
+  };
+
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (searchQuery.trim()) {
+      navigate(`/?search=${encodeURIComponent(searchQuery.trim())}`);
     }
   };
 
@@ -203,21 +287,44 @@ const ProductDetail = () => {
               </Link>
             </div>
 
-            {/* Center - Page Title */}
-            <div className="hidden md:block">
-              <h2 className="text-lg font-semibold text-gray-800">Product Details</h2>
+            {/* Center - Search Bar */}
+            <div className="flex-1 flex justify-center">
+              <div className="max-w-2xl w-full">
+                <form onSubmit={handleSearch} className="relative">
+                  <Search className="w-4 h-4 absolute left-3 top-3 text-gray-400" />
+                  <Input
+                    placeholder="Search products, shops..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="pl-10 bg-white/90 border-gray-200 focus:border-blue-500 focus:ring-blue-500 h-10"
+                  />
+                </form>
+              </div>
             </div>
 
             {/* Right Side */}
             <div className="flex items-center space-x-3">
               {isAuthenticated && (
-                <Link to="/my-reservations">
-                  <Button variant="outline" size="default" className="gap-2 hover:bg-blue-50 transition-colors">
-                    <ShoppingBag className="w-4 h-4" />
-                    <span className="hidden sm:inline">My Reservations ({getReservationCount()})</span>
-                    <span className="sm:hidden">({getReservationCount()})</span>
-                  </Button>
-                </Link>
+                <>
+                  <Link to="/chat-overview">
+                    <Button variant="outline" size="default" className="gap-2 hover:bg-blue-50 transition-colors relative">
+                      <MessageSquare className="w-4 h-4" />
+                      <span className="hidden sm:inline">Chat</span>
+                      {getTotalUnreadCount() > 0 && (
+                        <Badge variant="destructive" className="absolute -top-2 -right-2 h-5 min-w-[20px] text-xs">
+                          {getTotalUnreadCount()}
+                        </Badge>
+                      )}
+                    </Button>
+                  </Link>
+                  <Link to="/my-reservations">
+                    <Button variant="outline" size="default" className="gap-2 hover:bg-blue-50 transition-colors">
+                      <ShoppingBag className="w-4 h-4" />
+                      <span className="hidden sm:inline">My Reservations ({getReservationCount()})</span>
+                      <span className="sm:hidden">({getReservationCount()})</span>
+                    </Button>
+                  </Link>
+                </>
               )}
               <AuthHeader />
             </div>

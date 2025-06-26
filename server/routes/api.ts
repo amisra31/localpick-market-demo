@@ -4,6 +4,7 @@ import { registerProductRoutes } from "./products";
 import { registerOrderRoutes } from "./orders";
 import { registerMessageRoutes } from "./messages";
 import { registerLocationRoutes } from "./location";
+import customersRoutes from "./customers";
 import { cleanupDatabase } from "../scripts/database-cleanup";
 import { deduplicateShops } from "../scripts/deduplicate-shops";
 import { auditSchema } from "../scripts/schema-audit";
@@ -20,6 +21,10 @@ export function registerApiRoutes(app: Express) {
   registerOrderRoutes(app);
   registerMessageRoutes(app);
   registerLocationRoutes(app);
+  
+  // Register customer routes
+  app.use('/api/customers', customersRoutes);
+  app.use('/api', customersRoutes);
   
   // Google Drive image proxy route with caching
   app.get('/api/proxy-image', async (req, res) => {
