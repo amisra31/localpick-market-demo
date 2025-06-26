@@ -13,7 +13,7 @@ import { Product, Shop } from "@/types";
 import { toast } from "@/hooks/use-toast";
 import { ArrowLeft, MapPin, Clock, ShoppingBag, ExternalLink, LogIn, MessageSquare, Navigation, Heart, Share, Copy, Check } from "lucide-react";
 import { SignOutButton } from "@/components/SignOutButton";
-import { getImageWithFallback, getOptimizedImageUrl, logImageError } from "@/utils/imageUtils";
+import { ImageWithFallback } from "@/components/ui/ImageWithFallback";
 import { CustomerMerchantChat } from "@/components/CustomerMerchantChat";
 import { generatePlusCode, copyToClipboard, openDirections, shareProduct, generateMapEmbedUrl } from "@/utils/locationUtils";
 import { GoogleMap } from "@/components/GoogleMap";
@@ -231,41 +231,12 @@ const ProductDetail = () => {
           <Card>
             <CardContent className="p-6">
               <div className="aspect-square w-full bg-gradient-to-br from-gray-100 to-gray-200 rounded-lg flex items-center justify-center overflow-hidden">
-                <img 
-                  src={getOptimizedImageUrl(product.image, 600, 600)} 
+                <ImageWithFallback
+                  src={product.image}
                   alt={product.name}
+                  width={600}
+                  height={600}
                   className="w-full h-full object-cover"
-                  onLoad={() => {
-                    console.log('✅ Image loaded successfully in ProductDetail:', {
-                      productName: product.name,
-                      originalUrl: product.image,
-                      processedUrl: getOptimizedImageUrl(product.image, 600, 600),
-                      isGoogleDrive: product.image?.includes('drive.google.com')
-                    });
-                  }}
-                  onError={(e) => {
-                    console.log('❌ Image failed to load in ProductDetail:', {
-                      productName: product.name,
-                      originalUrl: product.image,
-                      processedUrl: getOptimizedImageUrl(product.image, 600, 600),
-                      isGoogleDrive: product.image?.includes('drive.google.com'),
-                      errorTarget: e.currentTarget.src
-                    });
-                    logImageError(product.image, 'ProductDetail');
-                    // If the original URL contains /api/placeholder, don't replace it
-                    if (product.image && product.image.includes('/api/placeholder/')) {
-                      return; // Keep the working placeholder
-                    }
-                    // For Google Drive URLs that failed through proxy, fall back to placeholder
-                    if (product.image && product.image.includes('drive.google.com')) {
-                      console.log('🔄 Google Drive image failed on ProductDetail, using fallback');
-                      e.currentTarget.src = getImageWithFallback('');
-                      e.currentTarget.alt = 'Product placeholder';
-                      return;
-                    }
-                    e.currentTarget.src = getImageWithFallback('');
-                    e.currentTarget.alt = 'Product placeholder';
-                  }}
                 />
               </div>
             </CardContent>

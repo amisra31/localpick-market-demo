@@ -6,7 +6,7 @@ import { UserRole } from '@/contexts/AuthContext';
 export const getRoleLandingPage = (role: UserRole): string => {
   switch (role) {
     case 'admin':
-      return '/admin-dashboard';
+      return '/admin-comprehensive';
     case 'merchant':
       return '/shop-owner-dashboard';
     case 'user':

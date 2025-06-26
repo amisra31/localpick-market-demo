@@ -2,30 +2,38 @@ import type { Express } from "express";
 import { eq, and, desc } from "drizzle-orm";
 import { db, schema } from "../db";
 import { nanoid } from "nanoid";
+import { createOrderSchema, updateOrderSchema, idParamSchema, paginationQuerySchema } from "../../shared/schema";
+import { validateBody, validateParams, validateQuery, rateLimit, sanitizeInputs } from "../middleware/validation";
+import { authenticate, requireAuth, requireShopOwnership, optionalAuth } from "../middleware/auth";
 
 export function registerOrderRoutes(app: Express) {
-  // Get all orders for a shop
-  app.get('/api/shops/:shopId/orders', async (req, res) => {
-    try {
-      const { shopId } = req.params;
-      const { type } = req.query; // 'order', 'reservation', or 'all'
-      
-      let query = db.select()
-        .from(schema.orders)
-        .where(eq(schema.orders.shop_id, shopId))
-        .orderBy(desc(schema.orders.created_at));
-      
-      if (type && type !== 'all') {
-        query = query.where(eq(schema.orders.order_type, type as string));
+  // Get all orders for a shop (requires shop ownership)
+  app.get('/api/shops/:shopId/orders', 
+    authenticate,
+    validateParams(idParamSchema.pick({ id: true }).extend({ shopId: idParamSchema.shape.id })),
+    requireShopOwnership,
+    async (req, res) => {
+      try {
+        const { shopId } = req.params;
+        const { type } = req.query; // 'order', 'reservation', or 'all'
+        
+        let query = db.select()
+          .from(schema.orders)
+          .where(eq(schema.orders.shop_id, shopId))
+          .orderBy(desc(schema.orders.created_at));
+        
+        if (type && type !== 'all') {
+          query = query.where(eq(schema.orders.order_type, type as string));
+        }
+        
+        const orders = await query;
+        res.json(orders);
+      } catch (error) {
+        console.error('Error fetching orders:', error);
+        res.status(500).json({ error: 'Failed to fetch orders' });
       }
-      
-      const orders = await query;
-      res.json(orders);
-    } catch (error) {
-      console.error('Error fetching orders:', error);
-      res.status(500).json({ error: 'Failed to fetch orders' });
     }
-  });
+  );
 
   // Get order by ID with product and shop details
   app.get('/api/orders/:id', async (req, res) => {

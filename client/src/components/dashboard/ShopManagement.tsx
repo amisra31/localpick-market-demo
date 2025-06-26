@@ -124,7 +124,7 @@ export const ShopManagement: React.FC<ShopManagementProps> = ({ shop, onShopUpda
     return emailRegex.test(email);
   };
 
-  const handleShopSubmit = (e: React.FormEvent) => {
+  const handleShopSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user) return;
 
@@ -167,14 +167,14 @@ export const ShopManagement: React.FC<ShopManagementProps> = ({ shop, onShopUpda
 
     try {
       if (shop) {
-        const updatedShop = mockDataService.updateShop(shop.id, shopForm);
+        const updatedShop = await dataService.updateShop(shop.id, shopForm);
         onShopUpdate(updatedShop);
         toast({
           title: "Shop updated successfully",
           description: "Your shop profile has been updated."
         });
       } else {
-        const newShop = mockDataService.createShop({
+        const newShop = await dataService.createShop({
           ...shopForm,
           ownerId: user.id
         });

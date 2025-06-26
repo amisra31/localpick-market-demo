@@ -187,6 +187,84 @@ export const insertDirectMessageSchema = createInsertSchema(direct_messages).pic
   is_read: true,
 });
 
+// Enhanced validation schemas for API endpoints
+export const createUserSchema = z.object({
+  email: z.string().email('Invalid email format').max(255),
+  password: z.string().min(8, 'Password must be at least 8 characters').max(128),
+  name: z.string().min(1, 'Name is required').max(100).optional(),
+  role: z.enum(['admin', 'merchant', 'customer']).default('customer'),
+});
+
+export const updateUserSchema = z.object({
+  name: z.string().min(1).max(100).optional(),
+  email: z.string().email().max(255).optional(),
+}).strict();
+
+export const createShopSchema = z.object({
+  name: z.string().min(1, 'Shop name is required').max(100),
+  category: z.string().min(1, 'Category is required').max(50),
+  location: z.string().min(1, 'Location is required').max(255),
+  phone: z.string().max(20).optional(),
+  hours: z.string().max(255).optional(),
+  business_email: z.string().email().max(255).optional(),
+  website: z.string().url().max(255).optional(),
+  social_links: z.string().max(500).optional(),
+  about_shop: z.string().max(1000).optional(),
+  shop_photo: z.string().url().max(500).optional(),
+  status: z.enum(['pending', 'approved', 'rejected']).default('pending'),
+});
+
+export const updateShopSchema = createShopSchema.partial().strict();
+
+export const createProductSchema = z.object({
+  shop_id: z.string().min(1, 'Shop ID is required'),
+  name: z.string().min(1, 'Product name is required').max(100),
+  image: z.string().url().max(500).optional(),
+  price: z.number().min(0, 'Price must be non-negative').max(999999.99),
+  description: z.string().max(1000).optional(),
+  stock: z.number().int().min(0, 'Stock must be non-negative').max(999999),
+});
+
+export const updateProductSchema = createProductSchema.partial().omit({ shop_id: true }).strict();
+
+export const createOrderSchema = z.object({
+  shop_id: z.string().min(1, 'Shop ID is required'),
+  product_id: z.string().min(1, 'Product ID is required'),
+  customer_name: z.string().min(1, 'Customer name is required').max(100),
+  customer_phone: z.string().max(20).optional(),
+  customer_email: z.string().email().max(255).optional(),
+  delivery_address: z.string().max(500).optional(),
+  quantity: z.number().int().min(1, 'Quantity must be at least 1').max(100),
+  order_type: z.enum(['pickup', 'delivery']).default('pickup'),
+});
+
+export const updateOrderSchema = z.object({
+  status: z.enum(['pending', 'confirmed', 'ready', 'completed', 'cancelled']),
+  customer_phone: z.string().max(20).optional(),
+  customer_email: z.string().email().max(255).optional(),
+  delivery_address: z.string().max(500).optional(),
+}).strict();
+
+export const createMessageSchema = z.object({
+  message: z.string().min(1, 'Message cannot be empty').max(1000),
+  sender_type: z.enum(['customer', 'merchant']),
+  shop_id: z.string().min(1, 'Shop ID is required'),
+  product_id: z.string().optional(),
+  customer_id: z.string().optional(),
+});
+
+export const idParamSchema = z.object({
+  id: z.string().min(1, 'ID is required'),
+});
+
+export const paginationQuerySchema = z.object({
+  page: z.string().regex(/^\d+$/).transform(Number).default('1'),
+  limit: z.string().regex(/^\d+$/).transform(Number).default('10'),
+}).transform(data => ({
+  page: Math.max(1, data.page),
+  limit: Math.min(100, Math.max(1, data.limit))
+}));
+
 export const insertOperatingHoursSchema = createInsertSchema(operating_hours).pick({
   shop_id: true,
   day_of_week: true,

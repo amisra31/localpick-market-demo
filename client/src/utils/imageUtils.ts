@@ -5,10 +5,7 @@
  * Handles various Google Drive URL formats and converts them to viewable image URLs
  */
 export const convertGoogleDriveUrl = (url: string): string => {
-  console.log('🔄 convertGoogleDriveUrl input:', url);
-  
   if (!url || !url.includes('drive.google.com')) {
-    console.log('❌ Not a Google Drive URL, returning as-is');
     return url; // Return as-is if not a Google Drive URL
   }
   
@@ -24,17 +21,14 @@ export const convertGoogleDriveUrl = (url: string): string => {
   
   if (fileIdMatch) {
     const fileId = fileIdMatch[1];
-    const convertedUrl = `https://drive.google.com/uc?export=view&id=${fileId}`;
-    console.log('✅ Converted Google Drive URL to:', convertedUrl);
-    return convertedUrl;
+    return `https://drive.google.com/uc?export=view&id=${fileId}`;
   }
   
-  console.log('❌ No file ID found in Google Drive URL');
   return url; // Fallback to original URL if no file ID found
 };
 
 /**
- * Gets the best image URL with Google Drive conversion and fallback
+ * Gets the best image URL with processing and fallback
  */
 export const getImageWithFallback = (imageUrl: string, fallbackUrl?: string): string => {
   if (!imageUrl || imageUrl.trim() === '') {
@@ -46,22 +40,28 @@ export const getImageWithFallback = (imageUrl: string, fallbackUrl?: string): st
     return fallbackUrl || getDefaultPlaceholder();
   }
   
-  // Convert Google Drive URLs to proxied URLs to bypass CORS
-  const processedUrl = convertGoogleDriveUrl(imageUrl.trim());
+  const trimmedUrl = imageUrl.trim();
   
-  // If it's a Google Drive URL, use our proxy
-  if (processedUrl.includes('drive.google.com')) {
+  // Check if it's a supported external image service that might need proxying
+  const needsProxy = [
+    'drive.google.com',
+    'imgur.com',
+    'cloudinary.com'
+  ].some(domain => trimmedUrl.includes(domain));
+  
+  if (needsProxy) {
+    const processedUrl = convertGoogleDriveUrl(trimmedUrl);
     return `/api/proxy-image?url=${encodeURIComponent(processedUrl)}`;
   }
   
-  return processedUrl;
+  return trimmedUrl;
 };
 
 /**
- * Gets the default placeholder image URL
+ * Gets the default placeholder image URL for "No Image Available"
  */
 export const getDefaultPlaceholder = (): string => {
-  return 'https://images.unsplash.com/photo-1560472354-b33ff0c44a43?w=400&h=400&fit=crop&crop=center';
+  return '/api/placeholder/400/300?text=No+Image+Available';
 };
 
 /**
@@ -105,63 +105,46 @@ export const isImageUrl = (url: string): boolean => {
  * Creates an optimized image URL with size parameters when possible
  */
 export const getOptimizedImageUrl = (imageUrl: string, width?: number, height?: number): string => {
-  console.log('🖼️ getOptimizedImageUrl input:', imageUrl);
-  
   // Don't process empty URLs
   if (!imageUrl || imageUrl.trim() === '') {
-    console.log('❌ Empty URL, returning default placeholder');
     return getDefaultPlaceholder();
   }
   
-  // Convert Google Drive URLs first
-  const convertedUrl = convertGoogleDriveUrl(imageUrl.trim());
-  console.log('🖼️ After convertGoogleDriveUrl:', convertedUrl);
+  const trimmedUrl = imageUrl.trim();
   
-  // For Google Drive URLs, add size parameters and then proxy
-  if (convertedUrl.includes('drive.google.com/uc')) {
+  // Handle Google Drive URLs with size optimization
+  if (trimmedUrl.includes('drive.google.com')) {
+    const convertedUrl = convertGoogleDriveUrl(trimmedUrl);
     let urlWithSize = convertedUrl;
-    if (width && height) {
+    if (width && height && convertedUrl.includes('drive.google.com/uc')) {
       urlWithSize = convertedUrl + `&sz=w${width}-h${height}`;
-      console.log('🖼️ Google Drive URL with size:', urlWithSize);
     }
-    
-    // Use proxy to bypass CORS
-    const proxiedUrl = `/api/proxy-image?url=${encodeURIComponent(urlWithSize)}`;
-    console.log('🖼️ Proxied Google Drive URL:', proxiedUrl);
-    return proxiedUrl;
+    return `/api/proxy-image?url=${encodeURIComponent(urlWithSize)}`;
   }
   
-  // Handle other URL types normally
-  const processedUrl = getImageWithFallback(imageUrl);
-  console.log('🖼️ After getImageWithFallback:', processedUrl);
-  
-  // For Unsplash URLs, we can add size parameters
-  if (processedUrl.includes('images.unsplash.com')) {
+  // Handle Unsplash URLs with size optimization
+  if (trimmedUrl.includes('images.unsplash.com')) {
     try {
-      const url = new URL(processedUrl);
+      const url = new URL(trimmedUrl);
       if (width) url.searchParams.set('w', width.toString());
       if (height) url.searchParams.set('h', height.toString());
-      const finalUrl = url.toString();
-      console.log('🖼️ Unsplash URL with size:', finalUrl);
-      return finalUrl;
+      return url.toString();
     } catch (e) {
-      console.log('❌ Unsplash URL parsing failed:', e);
-      return processedUrl; // Return original if URL parsing fails
+      return trimmedUrl;
     }
   }
   
-  console.log('🖼️ Final URL (unchanged):', processedUrl);
-  return processedUrl;
+  // For other image services that might need proxying
+  const needsProxy = [
+    'imgur.com',
+    'cloudinary.com'
+  ].some(domain => trimmedUrl.includes(domain));
+  
+  if (needsProxy) {
+    return `/api/proxy-image?url=${encodeURIComponent(trimmedUrl)}`;
+  }
+  
+  // Return the URL as-is for local images or other allowed services
+  return trimmedUrl;
 };
 
-/**
- * Logs image loading errors for debugging
- */
-export const logImageError = (imageUrl: string, context: string) => {
-  console.warn(`Image failed to load in ${context}:`, {
-    originalUrl: imageUrl,
-    processedUrl: getImageWithFallback(imageUrl),
-    isGoogleDrive: imageUrl?.includes('drive.google.com'),
-    context
-  });
-};

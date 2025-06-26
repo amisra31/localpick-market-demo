@@ -13,6 +13,8 @@ import NewShopOwnerDashboard from "./pages/NewShopOwnerDashboard";
 import CustomerReservations from "./pages/CustomerReservations";
 import AdminDashboard from "./pages/AdminDashboard";
 import AdminPortal from "./pages/AdminPortal";
+import EnhancedAdminDashboard from "./pages/EnhancedAdminDashboard";
+import ComprehensiveAdminDashboard from "./pages/ComprehensiveAdminDashboard";
 import ProductDetail from "./pages/ProductDetail";
 import NotFound from "./pages/NotFound";
 import Login from "./pages/auth/Login";
@@ -66,6 +68,16 @@ const App = () => (
             <Route path="/admin" element={
               <ProtectedRoute requiredRole="admin">
                 <AdminDashboard />
+              </ProtectedRoute>
+            } />
+            <Route path="/admin-enhanced" element={
+              <ProtectedRoute requiredRole="admin">
+                <EnhancedAdminDashboard />
+              </ProtectedRoute>
+            } />
+            <Route path="/admin-comprehensive" element={
+              <ProtectedRoute requiredRole="admin">
+                <ComprehensiveAdminDashboard />
               </ProtectedRoute>
             } />
             

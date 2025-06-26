@@ -13,7 +13,7 @@ import { ProductWithShop, Shop } from "@/types";
 import { Search, MapPin, Clock, ShoppingBag, Eye, Store, Settings, BarChart3, Navigation, Coffee, Gift, Smartphone, Baby, Dumbbell, Plus, ChevronLeft, ChevronRight } from "lucide-react";
 import { ProductCard } from "@/components/ProductCard";
 import { SimpleLocationAutocomplete } from "@/components/SimpleLocationAutocomplete";
-import { getImageWithFallback, getOptimizedImageUrl, logImageError, getDefaultPlaceholder } from "@/utils/imageUtils";
+import { ImageWithFallback } from "@/components/ui/ImageWithFallback";
 import { generatePlusCode } from "@/utils/locationUtils";
 
 const Index = () => {
@@ -40,7 +40,7 @@ const Index = () => {
         return;
       }
       if (user.role === 'admin') {
-        navigate('/admin-dashboard');
+        navigate('/admin-comprehensive');
         return;
       }
       // Only customers (role === 'user') stay on this homepage
@@ -48,7 +48,6 @@ const Index = () => {
   }, [isAuthenticated, user, navigate]);
 
   useEffect(() => {
-    console.log('🚀 Component mounted - initial useEffect');
     // Clear any cached data to ensure fresh data loads
     localStorage.removeItem('localpick_shops');
     localStorage.removeItem('localpick_products');
@@ -80,44 +79,27 @@ const Index = () => {
 
   const loadProducts = async () => {
     if (isLoading) {
-      console.log('Already loading products, skipping...');
       return;
     }
     
     setIsLoading(true);
     try {
-      console.log('🔄 loadProducts() called');
       const allProducts = await enhancedDataService.getProducts();
       const allShops = await enhancedDataService.getShops();
       
-      console.log('📡 Raw API response - products:', allProducts.length, allProducts.map(p => p.id));
-      console.log('📡 Raw API response - shops:', allShops.length);
-      
       const productsWithShop: ProductWithShop[] = allProducts.map(product => {
         const shop = allShops.find(s => s.id === product.shopId);
-        if (!shop) {
-          console.warn(`🚨 No shop found for product ${product.id} with shopId: ${product.shopId}`);
-          console.log('Available shop IDs:', allShops.map(s => s.id));
-        }
         return {
           ...product,
           shop: shop!
         };
       });
 
-      console.log('🔗 After adding shop info:', productsWithShop.length, productsWithShop.map(p => p.id));
-
       // Remove any potential duplicates by product ID
       const uniqueProducts = productsWithShop.filter((product, index, self) => 
         index === self.findIndex(p => p.id === product.id)
       );
 
-      console.log('✅ After deduplication:', uniqueProducts.length, uniqueProducts.map(p => p.id));
-      if (allProducts.length !== uniqueProducts.length) {
-        console.warn('❌ Duplicates found and removed!');
-      }
-
-      console.log('📦 Setting products state with:', uniqueProducts.length, 'products');
       setProducts(uniqueProducts);
     } catch (error) {
       console.error('Failed to load products:', error);
@@ -127,7 +109,6 @@ const Index = () => {
   };
 
   const filterProducts = () => {
-    console.log('🔍 filterProducts() called with products:', products.length, products.map(p => p.id));
     let filtered = [...products];
 
     if (searchQuery) {
@@ -142,15 +123,11 @@ const Index = () => {
       filtered = filtered.filter(product => product.shop.category === categoryFilter);
     }
 
-
     // Ensure no duplicates in filtered results
     const uniqueFiltered = filtered.filter((product, index, self) => 
       index === self.findIndex(p => p.id === product.id)
     );
 
-    console.log('🎯 Filtered:', filtered.length, filtered.map(p => p.id));
-    console.log('🎯 Unique filtered:', uniqueFiltered.length, uniqueFiltered.map(p => p.id));
-    
     setFilteredProducts(uniqueFiltered);
   };
 
@@ -165,7 +142,6 @@ const Index = () => {
     setUserLocation(location);
     if (coordinates) {
       setLocationCoordinates(coordinates);
-      console.log('📍 Location with coordinates:', location, coordinates);
     }
     localStorage.setItem('userLocation', location);
     // Reload nearby shops when location changes
@@ -579,42 +555,13 @@ const Index = () => {
                     <Card className="group hover:shadow-xl transition-all duration-300 border-0 shadow-md bg-white hover:-translate-y-1 h-full cursor-pointer">
                       {/* Image - 70% of tile */}
                       <div className="relative h-48 bg-gradient-to-br from-gray-100 to-gray-200 rounded-t-xl overflow-hidden">
-                        <img 
-                          src={getOptimizedImageUrl(product.image, 400, 300)} 
+                        <ImageWithFallback
+                          src={product.image}
                           alt={product.name}
+                          width={400}
+                          height={300}
                           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                           loading="lazy"
-                          onLoad={() => {
-                            console.log('✅ Image loaded successfully in Index Grid:', {
-                              productName: product.name,
-                              originalUrl: product.image,
-                              processedUrl: getOptimizedImageUrl(product.image, 400, 300),
-                              isGoogleDrive: product.image?.includes('drive.google.com')
-                            });
-                          }}
-                          onError={(e) => {
-                            console.log('❌ Image failed to load in Index Grid:', {
-                              productName: product.name,
-                              originalUrl: product.image,
-                              processedUrl: getOptimizedImageUrl(product.image, 400, 300),
-                              isGoogleDrive: product.image?.includes('drive.google.com'),
-                              errorTarget: e.currentTarget.src
-                            });
-                            logImageError(product.image, 'Index Grid');
-                            // If the original URL contains /api/placeholder, don't replace it
-                            if (product.image && product.image.includes('/api/placeholder/')) {
-                              return; // Keep the working placeholder
-                            }
-                            // For Google Drive URLs that failed through proxy, fall back to placeholder
-                            if (product.image && product.image.includes('drive.google.com')) {
-                              console.log('🔄 Google Drive image failed on Index, using fallback');
-                              e.currentTarget.src = getDefaultPlaceholder();
-                              e.currentTarget.alt = 'Product placeholder';
-                              return;
-                            }
-                            e.currentTarget.src = getDefaultPlaceholder();
-                            e.currentTarget.alt = 'Product placeholder';
-                          }}
                         />
                         {product.stock === 0 && (
                           <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center">

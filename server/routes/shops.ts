@@ -421,6 +421,34 @@ export function registerShopRoutes(app: Express) {
     }
   });
 
+  // Delete a specific shop (admin only)
+  app.delete('/api/shops/:id', async (req, res) => {
+    try {
+      const { id } = req.params;
+      
+      // First, delete all products associated with this shop
+      await db.delete(schema.products).where(eq(schema.products.shop_id, id));
+      
+      // Then delete the shop
+      const result = await db.delete(schema.shops).where(eq(schema.shops.id, id));
+      
+      // Notify WebSocket clients of shop deletion
+      const wsManager = getWebSocketManager();
+      wsManager.broadcastToShop(id, {
+        type: 'shop_deleted',
+        data: { shopId: id }
+      });
+      
+      res.json({ 
+        success: true, 
+        message: 'Shop and associated products deleted successfully' 
+      });
+    } catch (error) {
+      console.error('Error deleting shop:', error);
+      res.status(500).json({ error: 'Failed to delete shop' });
+    }
+  });
+
   // Test endpoint for image URL processing
   app.post('/api/test-image-processing', (req, res) => {
     const { image_urls } = req.body;

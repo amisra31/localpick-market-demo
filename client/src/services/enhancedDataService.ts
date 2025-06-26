@@ -196,6 +196,39 @@ export class EnhancedDataService {
     return shop;
   }
 
+  async createShop(shopData: Partial<Shop>): Promise<Shop> {
+    const dbShopData = this.transformShopToDb(shopData);
+    
+    const response = await fetch(`${this.baseUrl}/shops`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(dbShopData)
+    });
+    if (!response.ok) throw new Error('Failed to create shop');
+    const dbShop = await response.json();
+    
+    const shop = this.transformShop(dbShop);
+    
+    // Notify subscribers of shop creation
+    this.notifySubscribers('shop:created', shop);
+    
+    return shop;
+  }
+
+  async deleteShop(id: string): Promise<boolean> {
+    const response = await fetch(`${this.baseUrl}/shops/${id}`, {
+      method: 'DELETE'
+    });
+    
+    if (response.ok) {
+      // Notify subscribers of shop deletion
+      this.notifySubscribers('shop:deleted', { id });
+      return true;
+    }
+    
+    return false;
+  }
+
   async updateShopHours(id: string, hours: any[]): Promise<Shop> {
     const response = await fetch(`${this.baseUrl}/shops/${id}/hours`, {
       method: 'PUT',

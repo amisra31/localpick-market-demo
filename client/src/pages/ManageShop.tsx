@@ -1,23 +1,24 @@
 
-import { useState } from "react";
+import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { Button } from "@/components/ui/button";
+import { useAuth } from "@/contexts/AuthContext";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { mockShopOwners } from "@/services/mockData";
 import { ArrowLeft, Store } from "lucide-react";
 import { Link } from "react-router-dom";
 
 const ManageShop = () => {
-  const [selectedOwner, setSelectedOwner] = useState<string>("");
+  const { user, isAuthenticated } = useAuth();
   const navigate = useNavigate();
 
-  const handleLogin = () => {
-    if (selectedOwner) {
-      localStorage.setItem('localpick_current_owner', selectedOwner);
+  useEffect(() => {
+    // Redirect authenticated merchants to their dashboard
+    if (isAuthenticated && user?.role === 'merchant') {
       navigate('/shop-owner-dashboard');
+    } else if (!isAuthenticated) {
+      // Redirect unauthenticated users to login
+      navigate('/login');
     }
-  };
+  }, [isAuthenticated, user, navigate]);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-emerald-50 to-teal-50 flex items-center justify-center p-4">
@@ -35,43 +36,13 @@ const ManageShop = () => {
             <div>
               <CardTitle className="text-2xl">Shop Management</CardTitle>
               <CardDescription className="text-base">
-                Select your account to manage your shop and products
+                Redirecting you to the appropriate dashboard...
               </CardDescription>
             </div>
           </CardHeader>
           <CardContent className="space-y-6">
-            <div>
-              <label className="text-sm font-medium mb-3 block text-gray-700">
-                Select Your Shop Account
-              </label>
-              <Select value={selectedOwner} onValueChange={setSelectedOwner}>
-                <SelectTrigger className="bg-white border-gray-200 h-12">
-                  <SelectValue placeholder="Choose your account..." />
-                </SelectTrigger>
-                <SelectContent>
-                  {mockShopOwners.map((owner) => (
-                    <SelectItem key={owner.id} value={owner.id}>
-                      <div className="flex flex-col items-start">
-                        <span className="font-medium">{owner.name}</span>
-                        <span className="text-xs text-gray-500">{owner.email}</span>
-                      </div>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            
-            <Button 
-              onClick={handleLogin} 
-              disabled={!selectedOwner}
-              className="w-full h-12 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white border-0"
-            >
-              Access Dashboard
-            </Button>
-            
-            <div className="text-xs text-gray-500 text-center mt-4 p-3 bg-gray-50 rounded-lg">
-              <p className="font-medium mb-1">Demo Mode</p>
-              <p>This is a demonstration login. In production, you would use secure authentication.</p>
+            <div className="text-center text-gray-600">
+              <p>Please wait while we redirect you to your dashboard.</p>
             </div>
           </CardContent>
         </Card>

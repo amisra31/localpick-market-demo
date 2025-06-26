@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Store, MapPin, Clock, Eye } from 'lucide-react';
 import { ProductWithShop } from '@/types';
-import { getImageWithFallback, getOptimizedImageUrl, logImageError, isPlaceholderImage } from '@/utils/imageUtils';
+import { ImageWithFallback } from '@/components/ui/ImageWithFallback';
 import { generatePlusCode } from '@/utils/locationUtils';
 
 interface ProductCardProps {
@@ -37,35 +37,13 @@ export const ProductCard: React.FC<ProductCardProps> = ({
       <CardHeader className="pb-3 space-y-0">
         {/* Image Container with Fixed Aspect Ratio */}
         <div className="relative aspect-square w-full bg-gradient-to-br from-gray-100 to-gray-200 rounded-xl mb-4 overflow-hidden">
-          <img 
-            src={getOptimizedImageUrl(product.image, 400, 400)} 
+          <ImageWithFallback
+            src={product.image}
             alt={product.name}
+            width={400}
+            height={400}
             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
             loading="lazy"
-            onLoad={() => {
-              console.log('✅ Image loaded successfully in ProductCard:', {
-                productName: product.name,
-                originalUrl: product.image,
-                processedUrl: getOptimizedImageUrl(product.image, 400, 400),
-                isGoogleDrive: product.image?.includes('drive.google.com')
-              });
-            }}
-            onError={(e) => {
-              console.log('❌ Image failed to load in ProductCard:', {
-                productName: product.name,
-                originalUrl: product.image,
-                processedUrl: getOptimizedImageUrl(product.image, 400, 400),
-                isGoogleDrive: product.image?.includes('drive.google.com'),
-                errorTarget: e.currentTarget.src
-              });
-              logImageError(product.image, 'ProductCard');
-              // If the original URL contains /api/placeholder, don't replace it
-              if (product.image && product.image.includes('/api/placeholder/')) {
-                return; // Keep the working placeholder
-              }
-              e.currentTarget.src = getImageWithFallback('');
-              e.currentTarget.alt = 'Product placeholder';
-            }}
           />
           {/* Stock overlay */}
           {product.stock === 0 && (

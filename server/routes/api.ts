@@ -4,6 +4,10 @@ import { registerProductRoutes } from "./products";
 import { registerOrderRoutes } from "./orders";
 import { registerMessageRoutes } from "./messages";
 import { registerLocationRoutes } from "./location";
+import { cleanupDatabase } from "../scripts/database-cleanup";
+import { deduplicateShops } from "../scripts/deduplicate-shops";
+import { auditSchema } from "../scripts/schema-audit";
+import { authenticate, requireAdmin } from "../middleware/auth";
 
 // Simple in-memory cache for images
 const imageCache = new Map<string, { data: Buffer; contentType: string; timestamp: number }>();
@@ -26,9 +30,19 @@ export function registerApiRoutes(app: Express) {
         return res.status(400).json({ error: 'URL parameter is required' });
       }
       
-      // Only allow Google Drive URLs for security
-      if (!url.includes('drive.google.com')) {
-        return res.status(400).json({ error: 'Only Google Drive URLs are allowed' });
+      // Allow common image hosting services for security
+      const allowedDomains = [
+        'drive.google.com',
+        'images.unsplash.com',
+        'imgur.com',
+        'cloudinary.com',
+        'amazonaws.com',
+        'googleusercontent.com'
+      ];
+      
+      const isAllowedUrl = allowedDomains.some(domain => url.includes(domain));
+      if (!isAllowedUrl) {
+        return res.status(400).json({ error: 'URL domain not allowed' });
       }
       
       // Check cache first
@@ -36,7 +50,6 @@ export function registerApiRoutes(app: Express) {
       const now = Date.now();
       
       if (cached && (now - cached.timestamp) < CACHE_DURATION) {
-        console.log('🚀 Serving cached image:', url);
         res.set({
           'Content-Type': cached.contentType,
           'Cache-Control': 'public, max-age=86400',
@@ -45,13 +58,10 @@ export function registerApiRoutes(app: Express) {
         return res.send(cached.data);
       }
       
-      console.log('🖼️ Fetching Google Drive image:', url);
-      
       const fetch = (await import('node-fetch')).default;
       const response = await fetch(url);
       
       if (!response.ok) {
-        console.log('❌ Google Drive fetch failed:', response.status, response.statusText);
         return res.status(response.status).json({ error: 'Failed to fetch image' });
       }
       
@@ -83,7 +93,6 @@ export function registerApiRoutes(app: Express) {
         'Access-Control-Allow-Origin': '*'
       });
       
-      console.log('✅ Successfully cached and serving image, content-type:', contentType);
       
       // Send the buffered image data
       res.send(buffer);
@@ -91,6 +100,57 @@ export function registerApiRoutes(app: Express) {
     } catch (error) {
       console.error('❌ Image proxy error:', error);
       res.status(500).json({ error: 'Internal server error' });
+    }
+  });
+
+  // Database cleanup endpoint (admin only)
+  app.post('/api/admin/cleanup-database', authenticate, requireAdmin, async (req, res) => {
+    try {
+      await cleanupDatabase();
+      res.json({ 
+        success: true, 
+        message: 'Database cleanup completed successfully' 
+      });
+    } catch (error) {
+      console.error('Database cleanup failed:', error);
+      res.status(500).json({ 
+        error: 'Database cleanup failed',
+        details: error instanceof Error ? error.message : 'Unknown error'
+      });
+    }
+  });
+
+  // Shop deduplication endpoint (admin only)
+  app.post('/api/admin/deduplicate-shops', authenticate, requireAdmin, async (req, res) => {
+    try {
+      await deduplicateShops();
+      res.json({ 
+        success: true, 
+        message: 'Shop deduplication completed successfully' 
+      });
+    } catch (error) {
+      console.error('Shop deduplication failed:', error);
+      res.status(500).json({ 
+        error: 'Shop deduplication failed',
+        details: error instanceof Error ? error.message : 'Unknown error'
+      });
+    }
+  });
+
+  // Schema audit endpoint (admin only)
+  app.get('/api/admin/schema-audit', authenticate, requireAdmin, async (req, res) => {
+    try {
+      await auditSchema();
+      res.json({ 
+        success: true, 
+        message: 'Schema audit completed successfully - check server logs for details' 
+      });
+    } catch (error) {
+      console.error('Schema audit failed:', error);
+      res.status(500).json({ 
+        error: 'Schema audit failed',
+        details: error instanceof Error ? error.message : 'Unknown error'
+      });
     }
   });
 }
