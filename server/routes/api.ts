@@ -15,6 +15,16 @@ const imageCache = new Map<string, { data: Buffer; contentType: string; timestam
 const CACHE_DURATION = 30 * 60 * 1000; // 30 minutes
 
 export function registerApiRoutes(app: Express) {
+  // Health check endpoint
+  app.get('/api/health', (req, res) => {
+    res.status(200).json({ 
+      status: 'healthy',
+      timestamp: new Date().toISOString(),
+      uptime: process.uptime(),
+      memory: process.memoryUsage()
+    });
+  });
+
   // Register all modular route handlers
   registerShopRoutes(app);
   registerProductRoutes(app);

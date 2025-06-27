@@ -1,0 +1,107 @@
+# Render Blueprint for LocalPick Market Demo
+# Full-stack TypeScript application with React frontend and Express backend
+
+services:
+  # Backend API Server with WebSocket support
+  - type: web
+    name: localpick-api
+    env: node
+    plan: starter  # Can upgrade to standard/pro for better performance
+    buildCommand: npm ci && npm run build
+    startCommand: npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 5000
+      - key: DATABASE_URL
+        value: file:./data/database.db
+      - key: FRONTEND_URL
+        fromService:
+          type: web
+          name: localpick-frontend
+          property: host
+      - key: WEBSOCKET_PORT
+        value: 5000
+      - key: TRUST_PROXY
+        value: true
+      - key: ENABLE_COMPRESSION
+        value: true
+      - key: LOG_LEVEL
+        value: info
+      # Add your secrets via Render Dashboard:
+      # - JWT_SECRET (generate strong random string)
+      # - SESSION_SECRET (generate strong random string)
+      # - GOOGLE_MAPS_API_KEY (from Google Cloud Console)
+      # - SUPABASE_URL (if using Supabase)
+      # - SUPABASE_ANON_KEY (if using Supabase)
+    healthCheckPath: /api/health
+    disk:
+      name: sqlite-data
+      mountPath: /opt/render/project/src/data
+      sizeGB: 1  # 1GB for SQLite database storage
+    
+  # Frontend Static Site
+  - type: web
+    name: localpick-frontend
+    env: static
+    buildCommand: npm ci && npm run build
+    staticPublishPath: ./dist/public
+    envVars:
+      - key: VITE_API_URL
+        fromService:
+          type: web
+          name: localpick-api
+          property: host
+      - key: VITE_WS_URL
+        fromService:
+          type: web
+          name: localpick-api
+          property: host
+      - key: NODE_ENV
+        value: production
+    headers:
+      - path: /*
+        name: X-Frame-Options
+        value: SAMEORIGIN
+      - path: /*
+        name: X-Content-Type-Options
+        value: nosniff
+      - path: /*
+        name: X-XSS-Protection
+        value: 1; mode=block
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
+        
+  # Optional: Redis for session management (upgrade to paid plan)
+  # - type: redis
+  #   name: localpick-redis
+  #   plan: starter
+  #   maxmemoryPolicy: allkeys-lru
+
+# Database Migration Strategy:
+# Since Render doesn't support persistent local storage by default,
+# consider these alternatives:
+# 1. Use Render PostgreSQL service (recommended for production)
+# 2. Use external database service (PlanetScale, Supabase, etc.)
+# 3. Use persistent disk (as configured above) - limited to 1GB on free tier
+
+# Deployment Instructions:
+# 1. Connect your GitHub repository to Render
+# 2. Create a new Blueprint deployment
+# 3. Upload this render.yaml file
+# 4. Set environment variables in Render Dashboard:
+#    - JWT_SECRET
+#    - SESSION_SECRET
+#    - GOOGLE_MAPS_API_KEY
+#    - Any other secrets from .env.example
+# 5. Deploy and test both services
+
+# Notes:
+# - WebSocket connections are supported on Render
+# - Both services will be deployed simultaneously
+# - Static frontend will be served via CDN
+# - Backend includes persistent disk for SQLite
+# - Health checks are configured for uptime monitoring
