@@ -48,15 +48,14 @@ RUN mkdir -p /app/data && chown nodejs:nodejs /app/data
 
 # Set environment variables
 ENV NODE_ENV=production
-ENV PORT=5000
 ENV DATABASE_URL=file:/app/data/database.db
 
 USER nodejs
 
-EXPOSE 5000
+EXPOSE 10000
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-  CMD node -e "require('http').get('http://localhost:5000/api/health', (res) => { process.exit(res.statusCode === 200 ? 0 : 1) })"
+  CMD node -e "require('http').get('http://localhost:' + (process.env.PORT || 10000) + '/api/health', (res) => { process.exit(res.statusCode === 200 ? 0 : 1) })"
 
 CMD ["dumb-init", "node", "dist/index.js"]
