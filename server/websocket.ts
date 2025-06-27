@@ -165,7 +165,8 @@ export class WebSocketManager {
     ws.userType = userType;
     ws.shopId = shopId;
 
-    console.log(`Authenticated ${clientId} as ${userType} ${userId}${shopId ? ` (shop: ${shopId})` : ''}`);
+    console.log(`🔐✅ AUTHENTICATED ${clientId} as ${userType} ${userId}${shopId ? ` (shop: ${shopId})` : ''}`);
+    console.log(`🔐📊 TOTAL AUTHENTICATED CONNECTIONS: ${Array.from(this.clients.values()).filter(c => c.userId).length}`);
     
     this.sendMessage(ws, {
       type: 'auth_success',
@@ -295,6 +296,13 @@ export class WebSocketManager {
   }
 
   private handleDisconnect(clientId: string) {
+    const ws = this.clients.get(clientId);
+    if (ws && ws.userId) {
+      console.log(`🔌❌ DISCONNECTING AUTHENTICATED USER: ${clientId} (${ws.userType} ${ws.userId})`);
+    } else {
+      console.log(`🔌❌ DISCONNECTING UNAUTHENTICATED CLIENT: ${clientId}`);
+    }
+
     // Remove from all chat sessions
     for (const [chatId, clients] of this.chatSessions.entries()) {
       if (clients.has(clientId)) {
@@ -306,6 +314,9 @@ export class WebSocketManager {
     }
 
     this.clients.delete(clientId);
+    
+    const remainingAuthenticatedConnections = Array.from(this.clients.values()).filter(c => c.userId).length;
+    console.log(`🔐📊 REMAINING AUTHENTICATED CONNECTIONS: ${remainingAuthenticatedConnections}`);
   }
 
   private getChatId(chatSession: ChatSession): string {
@@ -399,6 +410,105 @@ export class WebSocketManager {
         }
       }
     });
+  }
+
+  // Broadcast to a specific user by user ID and type
+  public broadcastToUser(userId: string, userType: 'customer' | 'merchant', message: any) {
+    console.log(`🎯📡 BROADCAST START: Targeting ${userType} ${userId}`);
+    console.log(`🎯📊 Total connections: ${this.clients.size}`);
+    
+    // Get all authenticated connections for summary
+    const authenticatedConnections = Array.from(this.clients.values()).filter(c => c.userId);
+    console.log(`🎯🔐 Authenticated connections: ${authenticatedConnections.length}`);
+    
+    if (authenticatedConnections.length > 0) {
+      console.log(`🎯📋 AUTHENTICATED USERS LIST:`);
+      authenticatedConnections.forEach((ws, index) => {
+        console.log(`  ${index + 1}. userId=${ws.userId}, userType=${ws.userType}, readyState=${ws.readyState}`);
+      });
+    }
+    
+    let messagesSent = 0;
+    let userIdMatches = 0;
+    let typeMatches = 0;
+    let openConnections = 0;
+    
+    this.clients.forEach((ws, clientId) => {
+      const isUserIdMatch = ws.userId === userId;
+      const isTypeMatch = ws.userType === userType;
+      const isConnectionOpen = ws.readyState === WebSocket.OPEN;
+      
+      if (isUserIdMatch) {
+        userIdMatches++;
+        console.log(`🎯🔍 FOUND USER ID MATCH: ${clientId} (type=${ws.userType}, target=${userType}, open=${isConnectionOpen})`);
+      }
+      
+      if (isUserIdMatch && isTypeMatch) {
+        typeMatches++;
+        console.log(`🎯✅ PERFECT MATCH: ${clientId} (userId=${userId}, userType=${userType})`);
+        
+        if (isConnectionOpen) {
+          openConnections++;
+          try {
+            ws.send(JSON.stringify(message));
+            messagesSent++;
+            console.log(`🎯📤 MESSAGE SENT SUCCESSFULLY to ${clientId}`);
+          } catch (error) {
+            console.error(`🎯❌ SEND FAILED to ${clientId}:`, error);
+          }
+        } else {
+          console.log(`🎯🔌 CONNECTION NOT OPEN: ${clientId} (readyState=${ws.readyState})`);
+        }
+      }
+    });
+
+    console.log(`🎯📊 BROADCAST RESULTS:`);
+    console.log(`  - User ID matches: ${userIdMatches}`);
+    console.log(`  - Type matches: ${typeMatches}`);
+    console.log(`  - Open connections: ${openConnections}`);
+    console.log(`  - Messages sent: ${messagesSent}`);
+    
+    if (messagesSent === 0) {
+      console.log(`🎯🚨 BROADCAST FAILED: No messages sent to ${userType} ${userId}`);
+    } else {
+      console.log(`🎯🎉 BROADCAST SUCCESS: ${messagesSent} messages sent to ${userType} ${userId}`);
+    }
+  }
+
+  // Broadcast to all users with a specific role
+  public broadcastToRole(role: 'customer' | 'merchant' | 'admin', message: any) {
+    let messagesSent = 0;
+    
+    this.clients.forEach((ws, clientId) => {
+      if (ws.userType === role && ws.readyState === WebSocket.OPEN) {
+        try {
+          ws.send(JSON.stringify(message));
+          messagesSent++;
+        } catch (error) {
+          console.error(`Failed to send message to role ${role}:`, error);
+        }
+      }
+    });
+
+    console.log(`📡 Sent message to ${messagesSent} ${role} connections`);
+  }
+
+  // Broadcast to all merchants of a specific shop
+  public broadcastToShop(shopId: string, message: any) {
+    let messagesSent = 0;
+    
+    this.clients.forEach((ws, clientId) => {
+      if (ws.shopId === shopId && ws.userType === 'merchant' && ws.readyState === WebSocket.OPEN) {
+        try {
+          ws.send(JSON.stringify(message));
+          messagesSent++;
+        } catch (error) {
+          console.error(`Failed to send message to shop ${shopId}:`, error);
+        }
+      }
+    });
+
+    console.log(`📡 Sent message to ${messagesSent} merchant connections for shop ${shopId}`);
   }
 
   public getStats() {

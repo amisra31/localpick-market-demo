@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/contexts/AuthContext";
 import { enhancedDataService } from "@/services/enhancedDataService";
 import { useChatWebSocket } from "@/hooks/useChatWebSocket";
+import { useCustomerOrderSync } from "@/hooks/useOrderWebSocket";
 import { ArrowLeft, Clock, MapPin, ShoppingBag, Store, MessageSquare, X, Heart, Trash2 } from "lucide-react";
 import { SignOutButton } from "@/components/SignOutButton";
 import { AuthHeader } from "@/components/auth/AuthHeader";
@@ -45,47 +46,46 @@ const CustomerReservations = () => {
   const [wishlistItems, setWishlistItems] = useState<WishlistItem[]>([]);
   const [removingFromWishlist, setRemovingFromWishlist] = useState<string | null>(null);
 
-  // WebSocket connection for real-time order status updates
-  const {
-    isConnected,
-  } = useChatWebSocket({
-    enabled: isAuthenticated && !!user,
-    onMessage: (message) => {
-      console.log('📨 Customer received WebSocket message:', message);
+  // Real-time order status updates via WebSocket
+  const { isConnected } = useCustomerOrderSync((updatedOrder) => {
+    console.log('👤🔄 Customer received order update via WebSocket:', {
+      orderId: updatedOrder.id,
+      newStatus: updatedOrder.status,
+      customerId: user?.id,
+      currentReservations: reservations.map(r => ({ id: r.id, status: r.status })),
+      timestamp: new Date().toISOString()
+    });
+    
+    // Update reservations with new status
+    setReservations(prev => {
+      const orderToUpdate = prev.find(res => res.id === updatedOrder.id);
+      if (!orderToUpdate) {
+        console.log('⚠️ Customer: Order not found in current reservations for update:', updatedOrder.id);
+        return prev;
+      }
       
-      if (message.type === 'order_status_updated') {
-        const updatedOrder = message.payload;
-        
-        // Update reservations with new status
-        setReservations(prev => 
-          prev.map(res => 
-            res.id === updatedOrder.id 
-              ? { ...res, status: updatedOrder.status }
-              : res
-          )
-        );
-        
-        // Also update localStorage for backward compatibility
-        const localReservations = JSON.parse(localStorage.getItem('localpick_customer_reservations') || '[]');
-        const updatedLocal = localReservations.map((res: any) => 
-          res.id === updatedOrder.id ? { ...res, status: updatedOrder.status } : res
-        );
-        localStorage.setItem('localpick_customer_reservations', JSON.stringify(updatedLocal));
-      }
-    },
-    onConnect: () => {
-      console.log('✅ Customer WebSocket connected');
-      // Join customer-specific channel for order updates
-      if (user) {
-        // The WebSocket will automatically subscribe to customer updates
-      }
-    },
-    onDisconnect: () => {
-      console.log('🔌 Customer WebSocket disconnected');
-    },
-    onError: (error) => {
-      console.error('❌ Customer WebSocket error:', error);
-    }
+      const updated = prev.map(res => 
+        res.id === updatedOrder.id 
+          ? { ...res, status: updatedOrder.status }
+          : res
+      );
+      
+      console.log('👤✅ Customer reservations updated:', {
+        orderId: updatedOrder.id,
+        oldStatus: orderToUpdate.status,
+        newStatus: updatedOrder.status,
+        updatedReservations: updated.map(r => ({ id: r.id, status: r.status }))
+      });
+      
+      return updated;
+    });
+    
+    // Also update localStorage for backward compatibility
+    const localReservations = JSON.parse(localStorage.getItem('localpick_customer_reservations') || '[]');
+    const updatedLocal = localReservations.map((res: any) => 
+      res.id === updatedOrder.id ? { ...res, status: updatedOrder.status } : res
+    );
+    localStorage.setItem('localpick_customer_reservations', JSON.stringify(updatedLocal));
   });
 
   useEffect(() => {

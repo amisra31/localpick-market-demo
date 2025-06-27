@@ -59,13 +59,44 @@ export class EnhancedDataService {
   }
 
   async getProductsByShopId(shopId: string, includeArchived: boolean = false): Promise<Product[]> {
-    const response = await fetch(`${this.baseUrl}/shops/${shopId}/products?includeArchived=${includeArchived}`, {
-      headers: this.getAuthHeaders()
+    console.log(`📦🔍 FETCHING PRODUCTS BY SHOP:`, {
+      shopId,
+      includeArchived,
+      authHeaders: this.getAuthHeaders()
     });
-    if (!response.ok) throw new Error('Failed to fetch products');
-    const dbProducts = await response.json();
     
-    return dbProducts.map((dbProduct: any) => this.transformProduct(dbProduct));
+    const response = await fetch(`${this.baseUrl}/shops/${shopId}/products?includeArchived=${includeArchived}&_t=${Date.now()}`, {
+      headers: {
+        ...this.getAuthHeaders(),
+        'Cache-Control': 'no-cache',
+        'Pragma': 'no-cache'
+      }
+    });
+    
+    console.log(`📦📡 PRODUCTS API RESPONSE:`, {
+      shopId,
+      status: response.status,
+      ok: response.ok,
+      statusText: response.statusText
+    });
+    
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error(`📦❌ PRODUCTS API ERROR:`, errorText);
+      throw new Error('Failed to fetch products');
+    }
+    
+    const dbProducts = await response.json();
+    console.log(`📦✅ RAW PRODUCTS DATA:`, dbProducts);
+    
+    const transformedProducts = dbProducts.map((dbProduct: any) => this.transformProduct(dbProduct));
+    console.log(`📦🔄 TRANSFORMED PRODUCTS:`, {
+      shopId,
+      count: transformedProducts.length,
+      products: transformedProducts
+    });
+    
+    return transformedProducts;
   }
 
   async getProductById(id: string): Promise<Product | null> {
@@ -336,6 +367,13 @@ export class EnhancedDataService {
   }
 
   async updateOrderStatus(orderId: string, status: OrderStatus): Promise<Order> {
+    console.log(`📡🔄 EnhancedDataService: Updating order status:`, {
+      orderId,
+      status,
+      timestamp: new Date().toISOString(),
+      authHeaders: this.getAuthHeaders()
+    });
+    
     const response = await fetch(`${this.baseUrl}/orders/${orderId}/status`, {
       method: 'PATCH',
       headers: { 
@@ -344,10 +382,29 @@ export class EnhancedDataService {
       },
       body: JSON.stringify({ status })
     });
-    if (!response.ok) throw new Error('Failed to update order status');
+    
+    console.log(`📡📨 API response:`, {
+      orderId,
+      status: response.status,
+      ok: response.ok,
+      statusText: response.statusText
+    });
+    
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error(`📡❌ API error:`, {
+        orderId,
+        status: response.status,
+        error: errorText
+      });
+      throw new Error('Failed to update order status');
+    }
+    
     const dbOrder = await response.json();
+    console.log(`📡✅ DB order response:`, { orderId, dbOrder });
     
     const order = this.transformOrder(dbOrder);
+    console.log(`📡🔄 Transformed order:`, { orderId, transformedOrder: order });
     
     // Notify subscribers of order status update (all relevant users)
     this.notifySubscribers('order:status-updated', order);
@@ -396,27 +453,44 @@ export class EnhancedDataService {
 
   async getReservationsByCustomer(customerId: string): Promise<any[]> {
     try {
-      const response = await fetch(`${this.baseUrl}/orders?customerId=${customerId}&type=reservation`);
-      if (!response.ok) return [];
-      const dbOrders = await response.json();
+      console.log(`📦🔍 FETCHING RESERVATIONS: customerId=${customerId}`);
+      const response = await fetch(`${this.baseUrl}/orders?customerId=${customerId}`);
       
-      return dbOrders.map((dbOrder: any) => ({
+      console.log(`📦📡 RESERVATIONS API RESPONSE:`, {
+        status: response.status,
+        ok: response.ok,
+        statusText: response.statusText
+      });
+      
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error(`📦❌ RESERVATIONS API ERROR:`, errorText);
+        return [];
+      }
+      
+      const dbOrders = await response.json();
+      console.log(`📦✅ RESERVATIONS DATA:`, dbOrders);
+      
+      const transformedOrders = dbOrders.map((dbOrder: any) => ({
         id: dbOrder.id,
-        productId: dbOrder.product_id,
-        shopId: dbOrder.shop_id,
-        customerId: dbOrder.customer_id,
-        customerName: dbOrder.customer_name,
-        email: dbOrder.customer_email,
+        productId: dbOrder.productId,
+        shopId: dbOrder.shopId,
+        customerId: dbOrder.customerId,
+        customerName: dbOrder.customerName,
+        email: dbOrder.email,
         status: dbOrder.status,
-        createdAt: dbOrder.created_at,
-        productName: dbOrder.product_name || 'Product',
-        shopName: dbOrder.shop_name || 'Shop',
-        productPrice: dbOrder.product_price || 0,
-        productImage: dbOrder.product_image,
-        timestamp: dbOrder.created_at // For backward compatibility
+        createdAt: dbOrder.createdAt,
+        productName: dbOrder.productName || 'Product',
+        shopName: dbOrder.shopName || 'Shop',
+        productPrice: dbOrder.productPrice || 0,
+        productImage: dbOrder.productImage,
+        timestamp: dbOrder.createdAt // For backward compatibility
       }));
+      
+      console.log(`📦🔄 TRANSFORMED RESERVATIONS:`, transformedOrders);
+      return transformedOrders;
     } catch (error) {
-      console.error('Failed to fetch customer reservations:', error);
+      console.error('📦💥 FAILED TO FETCH RESERVATIONS:', error);
       return [];
     }
   }

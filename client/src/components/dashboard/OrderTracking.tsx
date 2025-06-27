@@ -98,14 +98,39 @@ export const OrderTracking: React.FC<OrderTrackingProps> = ({
 
   const confirmStatusChange = async () => {
     try {
-      await enhancedDataService.updateOrderStatus(confirmDialog.orderId, confirmDialog.newStatus);
-      onOrdersUpdate();
+      console.log(`🔄🏪 Merchant initiating order status update:`, {
+        orderId: confirmDialog.orderId,
+        oldStatus: confirmDialog.orderDetails?.status,
+        newStatus: confirmDialog.newStatus,
+        shopId: shop?.id,
+        timestamp: new Date().toISOString()
+      });
+      
+      const result = await enhancedDataService.updateOrderStatus(confirmDialog.orderId, confirmDialog.newStatus);
+      
+      console.log(`✅🏪 Merchant order status update completed:`, {
+        orderId: confirmDialog.orderId,
+        newStatus: confirmDialog.newStatus,
+        apiResult: result,
+        timestamp: new Date().toISOString()
+      });
+      
+      // Don't call onOrdersUpdate() anymore since we have real-time WebSocket updates
+      // onOrdersUpdate();
+      
       toast({
         title: "Order Updated",
         description: `Order status changed to ${confirmDialog.newStatus}.`
       });
       setConfirmDialog({ open: false, orderId: '', newStatus: 'pending' });
     } catch (error) {
+      console.error('❌🏪 Merchant order status update failed:', {
+        orderId: confirmDialog.orderId,
+        newStatus: confirmDialog.newStatus,
+        error: error,
+        timestamp: new Date().toISOString()
+      });
+      
       toast({
         title: "Error",
         description: "Failed to update order status",

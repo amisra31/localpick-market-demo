@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
 import { enhancedDataService } from '@/services/enhancedDataService';
 import { useOrderSync, useProductSync } from '@/hooks/useRealTimeSync';
+import { useMerchantOrderSync } from '@/hooks/useOrderWebSocket';
 import { Shop, Product, Order } from '@/types';
 import { toast } from '@/hooks/use-toast';
 import { 
@@ -99,10 +100,18 @@ const NewShopOwnerDashboard = () => {
 
   const loadProducts = async (shopId: string) => {
     try {
+      console.log(`🏪📦 LOADING PRODUCTS for shop: ${shopId} (merchant: ${user?.id})`);
       const shopProducts = await enhancedDataService.getProductsByShopId(shopId);
+      console.log(`🏪✅ PRODUCTS LOADED:`, {
+        shopId,
+        merchantId: user?.id,
+        productCount: shopProducts.length,
+        productIds: shopProducts.map(p => p.id),
+        productNames: shopProducts.map(p => p.name)
+      });
       setProducts(shopProducts);
     } catch (error) {
-      console.error('Failed to load products:', error);
+      console.error('🏪❌ FAILED TO LOAD PRODUCTS:', error);
     }
   };
 
@@ -131,7 +140,7 @@ const NewShopOwnerDashboard = () => {
     }
   });
 
-  // Real-time sync for orders
+  // Real-time sync for orders (legacy subscription-based)
   useOrderSync((updatedOrder) => {
     if (shop && updatedOrder.shopId === shop.id) {
       setOrders(prevOrders => {
@@ -145,6 +154,49 @@ const NewShopOwnerDashboard = () => {
         }
       });
     }
+  });
+
+  // Real-time sync for orders via WebSocket
+  useMerchantOrderSync(shop?.id || null, (updatedOrder) => {
+    console.log('🏪🔄 Merchant received order update via WebSocket:', {
+      orderId: updatedOrder.id,
+      newStatus: updatedOrder.status,
+      shopId: shop?.id,
+      currentOrders: orders.map(o => ({ id: o.id, status: o.status })),
+      timestamp: new Date().toISOString()
+    });
+    
+    setOrders(prevOrders => {
+      const index = prevOrders.findIndex(o => o.id === updatedOrder.id);
+      if (index >= 0) {
+        console.log(`🔄✅ Merchant updating existing order:`, {
+          orderId: updatedOrder.id,
+          oldStatus: prevOrders[index].status,
+          newStatus: updatedOrder.status
+        });
+        
+        const newOrders = [...prevOrders];
+        newOrders[index] = updatedOrder;
+        toast({
+          title: "Order Updated",
+          description: `Order ${updatedOrder.id} status changed to ${updatedOrder.status}`,
+        });
+        return newOrders;
+      } else {
+        console.log(`➕ Merchant adding new order:`, {
+          orderId: updatedOrder.id,
+          status: updatedOrder.status,
+          customerName: updatedOrder.customerName
+        });
+        
+        // New order created
+        toast({
+          title: "New Order",
+          description: `New order received from ${updatedOrder.customerName}`,
+        });
+        return [...prevOrders, updatedOrder];
+      }
+    });
   });
 
   const handleLogout = async () => {

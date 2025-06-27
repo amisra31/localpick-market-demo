@@ -31,6 +31,7 @@ class WebSocketManager {
   private connectionPromise: Promise<void> | null = null;
   private isConnecting = false;
   private reconnectTimeout: NodeJS.Timeout | null = null;
+  private disconnectTimeout: NodeJS.Timeout | null = null;
 
   static getInstance(): WebSocketManager {
     if (!WebSocketManager.instance) {
@@ -68,15 +69,25 @@ class WebSocketManager {
           
           // Authenticate if user is available
           if (user) {
+            // Map user roles: 'user' -> 'customer', 'merchant' -> 'merchant'
+            const userType = user.role === 'merchant' ? 'merchant' : 'customer';
+            
             const authMessage: WebSocketMessage = {
               type: 'auth',
               userId: user.id,
-              userType: user.role === 'merchant' ? 'merchant' : 'customer',
-              shopId: user.shop_id
+              userType: userType,
+              shopId: user.shop_id || undefined
             };
             
+            console.log('🔐✅ USER ROLE MAPPING:', { 
+              originalRole: user.role, 
+              mappedUserType: userType,
+              userId: user.id,
+              shopId: user.shop_id 
+            });
+            
             this.send(authMessage);
-            console.log('🔐 Authentication sent:', authMessage);
+            console.log('🔐📤 AUTHENTICATION SENT:', authMessage);
           }
           
           this.notifySubscribers({ type: 'connection_established' });
@@ -137,6 +148,11 @@ class WebSocketManager {
       this.reconnectTimeout = null;
     }
 
+    if (this.disconnectTimeout) {
+      clearTimeout(this.disconnectTimeout);
+      this.disconnectTimeout = null;
+    }
+
     if (this.ws) {
       this.ws.close(1000, 'Intentional disconnect');
       this.ws = null;
@@ -161,14 +177,27 @@ class WebSocketManager {
     this.subscribers.add(callback);
     console.log('🎧 WebSocket subscriber added. Total subscribers:', this.subscribers.size);
     
+    // Clear any pending disconnect timeout since we have a new subscriber
+    if (this.disconnectTimeout) {
+      clearTimeout(this.disconnectTimeout);
+      this.disconnectTimeout = null;
+    }
+    
     return () => {
       this.subscribers.delete(callback);
       console.log('🎧 WebSocket subscriber removed. Total subscribers:', this.subscribers.size);
       
-      // Disconnect if no more subscribers
+      // Delay disconnect to handle React re-renders and multiple hooks
       if (this.subscribers.size === 0) {
-        console.log('🔌 No more subscribers, disconnecting WebSocket');
-        this.disconnect();
+        console.log('🔌⏰ NO MORE SUBSCRIBERS: Scheduling disconnect in 5 seconds...');
+        this.disconnectTimeout = setTimeout(() => {
+          if (this.subscribers.size === 0) {
+            console.log('🔌❌ STILL NO SUBSCRIBERS: Disconnecting WebSocket after delay');
+            this.disconnect();
+          } else {
+            console.log('🔌✅ SUBSCRIBERS FOUND: Keeping connection alive');
+          }
+        }, 5000); // 5 second delay
       }
     };
   }

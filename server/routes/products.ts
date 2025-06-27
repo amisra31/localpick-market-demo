@@ -11,26 +11,63 @@ export function registerProductRoutes(app: Express) {
       const { shopId } = req.params;
       const { includeArchived = 'false' } = req.query;
       
+      console.log(`🏪📦 PRODUCTS REQUEST:`, {
+        shopId,
+        merchantId: req.user?.id,
+        merchantRole: req.user?.role,
+        includeArchived,
+        timestamp: new Date().toISOString()
+      });
+      
+      console.log(`🔍 BUILDING QUERY CONDITIONS:`, {
+        shopIdCondition: `shop_id = '${shopId}'`,
+        includeArchived,
+        willIncludeArchivedFilter: includeArchived !== 'true'
+      });
+      
       // For merchants, only show products from their own shop
       // (shop ownership is already verified by requireShopOwnership middleware)
-      let query = db.select().from(schema.products).where(eq(schema.products.shop_id, shopId));
+      const conditions = [eq(schema.products.shop_id, shopId)];
       
       if (includeArchived !== 'true') {
-        query = query.where(eq(schema.products.is_archived, false));
+        conditions.push(eq(schema.products.is_archived, false));
       }
       
-      const products = await query.orderBy(schema.products.created_at);
+      const products = await db.select()
+        .from(schema.products)
+        .where(and(...conditions))
+        .orderBy(schema.products.created_at);
+      
+      console.log(`🏪✅ PRODUCTS RESPONSE:`, {
+        shopId,
+        merchantId: req.user?.id,
+        productCount: products.length,
+        productIds: products.map(p => p.id),
+        productNames: products.map(p => p.name),
+        productShopIds: products.map(p => p.shop_id),
+        uniqueShopIds: [...new Set(products.map(p => p.shop_id))]
+      });
+      
       res.json(products);
     } catch (error) {
-      console.error('Error fetching products:', error);
+      console.error('🏪❌ PRODUCTS ERROR:', error);
       res.status(500).json({ error: 'Failed to fetch products' });
     }
   });
 
-  // Get all products (exclude archived by default)
+  // Get all products (exclude archived by default) - For public browsing and admin only
   app.get('/api/products', async (req, res) => {
     try {
       const { includeArchived = 'false' } = req.query;
+      
+      console.log(`🌐📦 PUBLIC PRODUCTS REQUEST:`, {
+        includeArchived,
+        userAgent: req.headers['user-agent'],
+        timestamp: new Date().toISOString()
+      });
+      
+      // Note: This endpoint is for public product browsing (customer facing)
+      // Merchants should use /api/shops/:shopId/products instead
       
       let query = db.select().from(schema.products);
       
@@ -39,9 +76,15 @@ export function registerProductRoutes(app: Express) {
       }
       
       const products = await query.orderBy(schema.products.created_at);
+      
+      console.log(`🌐✅ PUBLIC PRODUCTS RESPONSE:`, {
+        productCount: products.length,
+        uniqueShops: [...new Set(products.map(p => p.shop_id))].length
+      });
+      
       res.json(products);
     } catch (error) {
-      console.error('Error fetching all products:', error);
+      console.error('🌐❌ PUBLIC PRODUCTS ERROR:', error);
       res.status(500).json({ error: 'Failed to fetch products' });
     }
   });
