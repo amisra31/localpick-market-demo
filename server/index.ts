@@ -37,7 +37,12 @@ app.use((req, res, next) => {
 });
 
 (async () => {
+  console.log('🚀 Starting server initialization...');
+  console.log(`📍 NODE_ENV: ${process.env.NODE_ENV}`);
+  console.log(`📍 PORT: ${process.env.PORT || 5000}`);
+  
   const server = await registerRoutes(app);
+  console.log('✅ Routes registered successfully');
 
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
     const status = err.status || err.statusCode || 500;
@@ -60,8 +65,17 @@ app.use((req, res, next) => {
   // this serves both the API and the client.
   // It is the only port that is not firewalled.
   const port = process.env.PORT || 5000;
+  
+  console.log('🔌 Attempting to bind to port:', port);
+  
   server.listen(port, "0.0.0.0", () => {
-    log(`🚀 Server running on port ${port}`);
-    log(`🌍 Health check: http://localhost:${port}/api/health`);
+    console.log(`🚀 Server successfully running on port ${port}`);
+    console.log(`🌍 Health check: http://0.0.0.0:${port}/api/health`);
+    console.log(`📡 WebSocket endpoint: ws://0.0.0.0:${port}/ws`);
+    console.log('✅ Server is ready to accept connections');
+  });
+  
+  server.on('error', (error) => {
+    console.error('❌ Server error:', error);
   });
 })();

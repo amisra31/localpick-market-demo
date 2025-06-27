@@ -173,6 +173,7 @@ async function auditSchema() {
 export { auditSchema };
 
 // Run the audit if this script is executed directly
-if (import.meta.url === `file://${process.argv[1]}`) {
-  auditSchema().catch(console.error);
-}
+// Note: Disabled auto-execution to prevent running during production startup
+// if (import.meta.url === `file://${process.argv[1]}`) {
+//   auditSchema().catch(console.error);
+// }

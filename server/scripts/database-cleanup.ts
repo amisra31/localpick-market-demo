@@ -129,13 +129,14 @@ async function cleanupDatabase() {
 }
 
 // Run cleanup if this script is executed directly
-if (import.meta.url === `file://${process.argv[1]}`) {
-  cleanupDatabase()
-    .then(() => process.exit(0))
-    .catch((error) => {
-      console.error(error);
-      process.exit(1);
-    });
-}
+// Note: Disabled auto-execution to prevent running during production startup
+// if (import.meta.url === `file://${process.argv[1]}`) {
+//   cleanupDatabase()
+//     .then(() => process.exit(0))
+//     .catch((error) => {
+//       console.error(error);
+//       process.exit(1);
+//     });
+// }
 
 export { cleanupDatabase };

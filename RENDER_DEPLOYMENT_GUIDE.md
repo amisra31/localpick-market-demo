@@ -2,7 +2,21 @@
 
 ## ✅ **Fixes Applied:**
 
-### **1. Port Binding Issue Fixed**
+### **1. Auto-Execution Scripts Fixed**
+**Root Cause:** Database cleanup and schema audit scripts were auto-executing during startup due to esbuild bundling behavior.
+```javascript
+// ❌ WRONG - Was auto-executing during startup
+if (import.meta.url === `file://${process.argv[1]}`) {
+  cleanupDatabase(); // This was running during production startup!
+}
+
+// ✅ CORRECT - Disabled auto-execution
+// if (import.meta.url === `file://${process.argv[1]}`) {
+//   cleanupDatabase();
+// }
+```
+
+### **2. Port Binding Issue Fixed**
 The main issue was with the server's `listen()` method. Changed from:
 ```javascript
 // ❌ WRONG - This was causing the port binding error
