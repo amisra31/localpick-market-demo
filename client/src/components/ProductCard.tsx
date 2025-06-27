@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Store, MapPin, Clock, Eye } from 'lucide-react';
 import { ProductWithShop } from '@/types';
-import { ImageWithFallback } from '@/components/ui/ImageWithFallback';
+import { OptimizedImage } from '@/components/ui/OptimizedImage';
 import { generatePlusCode } from '@/utils/locationUtils';
 
 interface ProductCardProps {
@@ -37,11 +37,13 @@ export const ProductCard: React.FC<ProductCardProps> = ({
       <CardHeader className="pb-3 space-y-0">
         {/* Image Container with Fixed Aspect Ratio */}
         <div className="relative aspect-square w-full bg-gradient-to-br from-gray-100 to-gray-200 rounded-xl mb-4 overflow-hidden">
-          <ImageWithFallback
+          <OptimizedImage
             src={product.image}
             alt={product.name}
             width={400}
             height={400}
+            size="medium"
+            responsive={true}
             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
             loading="lazy"
           />

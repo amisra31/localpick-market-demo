@@ -168,4 +168,29 @@ export function registerApiRoutes(app: Express) {
       });
     }
   });
+
+  // Image backfill endpoint (admin only)
+  app.post('/api/admin/image-backfill', authenticate, requireAdmin, async (req, res) => {
+    try {
+      const { backfillImages } = await import('../scripts/image-backfill');
+      const options = {
+        dryRun: req.body.dryRun || false,
+        force: req.body.force || false,
+        batchSize: req.body.batchSize || 10,
+        maxImages: req.body.maxImages || undefined
+      };
+
+      const result = await backfillImages(options);
+      res.json({ 
+        success: true, 
+        ...result
+      });
+    } catch (error) {
+      console.error('Image backfill failed:', error);
+      res.status(500).json({ 
+        error: 'Image backfill failed',
+        details: error instanceof Error ? error.message : 'Unknown error'
+      });
+    }
+  });
 }
