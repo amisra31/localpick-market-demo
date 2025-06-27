@@ -67,7 +67,7 @@ const ChatOverview = () => {
                   <ArrowLeft className="w-5 h-5 text-white" />
                 </div>
                 <h1 className="text-xl font-bold bg-gradient-to-r from-gray-900 to-gray-600 bg-clip-text text-transparent">
-                  LocalPick Market
+                  LocalPick
                 </h1>
               </Link>
             </div>

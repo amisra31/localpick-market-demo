@@ -39,7 +39,7 @@ export const AuthHeader = () => {
 
   if (user) {
     return (
-      <Button variant="outline" size="default" onClick={handleSignOut} className="gap-2">
+      <Button variant="outline" size="sm" onClick={handleSignOut} className="gap-2 hover:bg-blue-50 transition-colors">
         <LogOut className="w-4 h-4" />
         Sign Out
       </Button>

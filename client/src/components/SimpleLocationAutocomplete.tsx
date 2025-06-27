@@ -2,14 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { MapPin, Navigation, Loader2 } from 'lucide-react';
-
-interface LocationSuggestion {
-  place_id: string;
-  description: string;
-  main_text: string;
-  secondary_text: string;
-  coordinates?: { lat: number; lng: number };
-}
+import { locationService, LocationSuggestion } from '@/services/locationService';
 
 interface SimpleLocationAutocompleteProps {
   value: string;
@@ -31,7 +24,7 @@ export const SimpleLocationAutocomplete: React.FC<SimpleLocationAutocompleteProp
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
-  // Fetch suggestions using our server-side API to avoid CORS issues
+  // Fetch suggestions using centralized location service
   const fetchSuggestions = useCallback(async (query: string) => {
     if (query.length < 2) {
       setSuggestions([]);
@@ -43,18 +36,8 @@ export const SimpleLocationAutocomplete: React.FC<SimpleLocationAutocompleteProp
     setIsLoading(true);
 
     try {
-      // Use our server-side proxy API
-      const response = await fetch(`/api/location/search?q=${encodeURIComponent(query)}`);
-      
-      console.log('📡 Response status:', response.status, response.statusText);
-      
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.error || `API error: ${response.status}`);
-      }
-
-      const suggestions = await response.json();
-      console.log('📍 Server returned suggestions:', suggestions.length);
+      const suggestions = await locationService.searchLocations(query);
+      console.log('📍 Location service returned suggestions:', suggestions.length);
 
       setSuggestions(suggestions);
       setShowSuggestions(suggestions.length > 0);
@@ -86,47 +69,57 @@ export const SimpleLocationAutocomplete: React.FC<SimpleLocationAutocompleteProp
     setSuggestions([]);
   };
 
+  const detectCurrentLocation = async () => {
+    setIsLoading(true);
+    try {
+      const result = await locationService.getCurrentLocation();
+      onChange(result.address);
+      onLocationSelect?.(result.address, result.coordinates);
+      setIsEditing(false);
+      setShowSuggestions(false);
+    } catch (error) {
+      console.error('Location detection failed:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   return (
     <div className={`relative ${className}`}>
       <div className="flex items-center gap-2">
         <MapPin className="w-4 h-4 text-orange-500 flex-shrink-0" />
         
-        {isEditing ? (
-          <div className="relative flex-1">
-            <Input
-              value={value}
-              onChange={(e) => onChange(e.target.value)}
-              onFocus={() => setIsEditing(true)}
-              onBlur={() => {
-                // Delay to allow clicking suggestions
-                setTimeout(() => {
-                  setIsEditing(false);
-                  setShowSuggestions(false);
-                }, 200);
-              }}
-              className="border-gray-300 focus:border-blue-500 focus:ring-blue-500"
-              placeholder={placeholder}
-              autoComplete="off"
-            />
-            
-            {isLoading && (
-              <div className="absolute right-2 top-2">
-                <Loader2 className="w-4 h-4 animate-spin text-blue-500" />
-              </div>
-            )}
-          </div>
-        ) : (
-          <button
-            onClick={() => setIsEditing(true)}
-            className="text-sm text-gray-700 hover:text-blue-600 hover:underline cursor-pointer px-3 py-2 rounded transition-colors bg-white border border-gray-200 flex-1 text-left truncate"
-          >
-            {value || placeholder}
-          </button>
-        )}
+        <div className="relative flex-1">
+          <Input
+            value={value}
+            onChange={(e) => onChange(e.target.value)}
+            onFocus={() => {
+              setIsEditing(true);
+              setShowSuggestions(true);
+            }}
+            onBlur={() => {
+              // Delay to allow clicking suggestions
+              setTimeout(() => {
+                setIsEditing(false);
+                setShowSuggestions(false);
+              }, 200);
+            }}
+            className="border-gray-300 focus:border-blue-500 focus:ring-blue-500 cursor-text"
+            placeholder={placeholder}
+            autoComplete="off"
+            autoFocus={false}
+          />
+          
+          {isLoading && (
+            <div className="absolute right-2 top-2">
+              <Loader2 className="w-4 h-4 animate-spin text-blue-500" />
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Suggestions dropdown */}
-      {showSuggestions && (
+      {showSuggestions && suggestions.length > 0 && (
         <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-50 max-h-80 overflow-y-auto">
           {suggestions.map((suggestion, index) => (
             <button
@@ -150,7 +143,7 @@ export const SimpleLocationAutocomplete: React.FC<SimpleLocationAutocompleteProp
             </button>
           ))}
           
-          {isLoading && (
+          {isLoading && suggestions.length === 0 && (
             <div className="flex items-center justify-center py-4 text-gray-500">
               <Loader2 className="w-4 h-4 animate-spin mr-2" />
               <span className="text-sm">Searching locations...</span>

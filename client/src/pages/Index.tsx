@@ -64,7 +64,9 @@ const Index = () => {
     }
     
     // Try to get user's actual location
-    detectUserLocation();
+    detectUserLocation().catch(error => {
+      console.error('Location detection failed:', error);
+    });
     
     // Reset state to ensure clean start
     setProducts([]);
@@ -217,25 +219,47 @@ const Index = () => {
   // Reverse geocode coordinates to get readable address
   const reverseGeocode = async (coords: {lat: number, lng: number}): Promise<string> => {
     try {
-      const response = await fetch(`/api/location/search?lat=${coords.lat}&lng=${coords.lng}&limit=1`);
+      const response = await fetch(`/api/location/reverse?lat=${coords.lat}&lng=${coords.lng}`);
       if (response.ok) {
-        const results = await response.json();
-        if (results && results.length > 0) {
-          return results[0].description || `${coords.lat.toFixed(4)}, ${coords.lng.toFixed(4)}`;
+        const result = await response.json();
+        if (result && result.address) {
+          return result.address;
         }
       }
     } catch (error) {
       console.log('❌ Reverse geocoding failed:', error);
     }
-    // Fallback to coordinates if reverse geocoding fails
-    return `${coords.lat.toFixed(4)}, ${coords.lng.toFixed(4)}`;
+    // Fallback to friendly text if reverse geocoding fails
+    return 'Current Location';
   };
 
   // Detect user's geolocation
-  const detectUserLocation = () => {
+  const detectUserLocation = async () => {
+    // Check if we have cached coordinates first
+    const cachedCoords = localStorage.getItem('userCoordinates');
+    const cacheTime = localStorage.getItem('userLocationCacheTime');
+    const now = Date.now();
+    
+    // Use cached location if it's less than 10 minutes old
+    if (cachedCoords && cacheTime && (now - parseInt(cacheTime) < 600000)) {
+      try {
+        const coords = JSON.parse(cachedCoords);
+        setLocationCoordinates(coords);
+        
+        const cachedLocation = localStorage.getItem('userLocation');
+        if (cachedLocation && cachedLocation !== 'Current Location') {
+          setUserLocation(cachedLocation);
+          return;
+        }
+      } catch (error) {
+        console.log('Error parsing cached coordinates:', error);
+      }
+    }
+    
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
         async (position) => {
+          console.log('🎯 Geolocation success:', position.coords.latitude, position.coords.longitude);
           const coords = {
             lat: position.coords.latitude,
             lng: position.coords.longitude
@@ -243,32 +267,57 @@ const Index = () => {
           setLocationCoordinates(coords);
           
           // Reverse geocode to get readable address
-          const address = await reverseGeocode(coords);
-          setUserLocation(address);
-          localStorage.setItem('userLocation', address);
-          localStorage.setItem('userCoordinates', JSON.stringify(coords));
-          
-          // Reload nearby shops with new location
-          loadNearbyShops();
+          try {
+            const address = await reverseGeocode(coords);
+            console.log('🏠 Reverse geocoded address:', address);
+            setUserLocation(address);
+            localStorage.setItem('userLocation', address);
+            localStorage.setItem('userCoordinates', JSON.stringify(coords));
+            localStorage.setItem('userLocationCacheTime', now.toString());
+            
+            // Reload nearby shops with new location
+            loadNearbyShops();
+          } catch (error) {
+            console.error('Reverse geocoding failed:', error);
+            setUserLocation('Current Location');
+          }
         },
         (error) => {
           console.log('❌ Geolocation error:', error.message);
-          // Fall back to default coordinates for Mariposa, CA
+          // Fall back to default coordinates and reverse geocode them
           const defaultCoords = { lat: 37.4845, lng: -119.9661 };
           setLocationCoordinates(defaultCoords);
           localStorage.setItem('userCoordinates', JSON.stringify(defaultCoords));
+          
+          // Try to get a readable address for default location
+          reverseGeocode(defaultCoords).then(address => {
+            setUserLocation(address);
+            localStorage.setItem('userLocation', address);
+          }).catch(() => {
+            setUserLocation('Vinamra Khand');
+          });
         },
         {
           enableHighAccuracy: true,
-          timeout: 10000,
-          maximumAge: 300000 // Cache for 5 minutes
+          timeout: 15000,
+          maximumAge: 600000 // Cache for 10 minutes
         }
       );
     } else {
-      // Fall back to default coordinates
+      console.log('❌ Geolocation not supported');
+      // Fall back to default coordinates and reverse geocode them
       const defaultCoords = { lat: 37.4845, lng: -119.9661 };
       setLocationCoordinates(defaultCoords);
       localStorage.setItem('userCoordinates', JSON.stringify(defaultCoords));
+      
+      // Try to get a readable address for default location
+      try {
+        const address = await reverseGeocode(defaultCoords);
+        setUserLocation(address);
+        localStorage.setItem('userLocation', address);
+      } catch (error) {
+        setUserLocation('Vinamra Khand');
+      }
     }
   };
 
@@ -415,7 +464,7 @@ const Index = () => {
                 <Store className="w-5 h-5 text-white" />
               </div>
               <h1 className="text-xl font-bold bg-gradient-to-r from-gray-900 to-gray-600 bg-clip-text text-transparent">
-                LocalPick Market
+                LocalPick
               </h1>
             </div>
 
@@ -686,7 +735,7 @@ const Index = () => {
               <div className="w-6 h-6 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-lg flex items-center justify-center">
                 <Store className="w-4 h-4 text-white" />
               </div>
-              <span className="text-gray-300 text-sm">© 2024 LocalPick Market. Supporting local businesses.</span>
+              <span className="text-gray-300 text-sm">© 2024 LocalPick. Supporting local businesses.</span>
             </div>
             <div className="flex items-center space-x-2 text-gray-400">
               <MapPin className="w-4 h-4 text-orange-400" />

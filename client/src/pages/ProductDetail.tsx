@@ -190,7 +190,11 @@ const ProductDetail = () => {
   };
 
   const handleToggleWishlist = async () => {
-    if (!user || !product || !shop) return;
+    if (!isAuthenticated || !user) {
+      navigate('/login', { state: { from: `/product/${product?.id}` } });
+      return;
+    }
+    if (!product || !shop) return;
 
     try {
       if (isWishlisted) {
@@ -256,6 +260,14 @@ const ProductDetail = () => {
     }
   };
 
+  const handleChatWithMerchant = () => {
+    if (!isAuthenticated || !user) {
+      navigate('/login', { state: { from: `/product/${product?.id}` } });
+      return;
+    }
+    setIsChatOpen(true);
+  };
+
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     if (searchQuery.trim()) {
@@ -282,7 +294,7 @@ const ProductDetail = () => {
                   <ArrowLeft className="w-5 h-5 text-white" />
                 </div>
                 <h1 className="text-xl font-bold bg-gradient-to-r from-gray-900 to-gray-600 bg-clip-text text-transparent">
-                  LocalPick Market
+                  LocalPick
                 </h1>
               </Link>
             </div>
@@ -307,7 +319,7 @@ const ProductDetail = () => {
               {isAuthenticated && (
                 <>
                   <Link to="/chat-overview">
-                    <Button variant="outline" size="default" className="gap-2 hover:bg-blue-50 transition-colors relative">
+                    <Button variant="outline" size="sm" className="gap-2 hover:bg-blue-50 transition-colors relative">
                       <MessageSquare className="w-4 h-4" />
                       <span className="hidden sm:inline">Chat</span>
                       {getTotalUnreadCount() > 0 && (
@@ -318,7 +330,7 @@ const ProductDetail = () => {
                     </Button>
                   </Link>
                   <Link to="/my-reservations">
-                    <Button variant="outline" size="default" className="gap-2 hover:bg-blue-50 transition-colors">
+                    <Button variant="outline" size="sm" className="gap-2 hover:bg-blue-50 transition-colors">
                       <ShoppingBag className="w-4 h-4" />
                       <span className="hidden sm:inline">My Reservations ({getReservationCount()})</span>
                       <span className="sm:hidden">({getReservationCount()})</span>
@@ -491,7 +503,7 @@ const ProductDetail = () => {
                           variant="outline"
                           className="w-full"
                           size="lg"
-                          onClick={() => setIsChatOpen(true)}
+                          onClick={handleChatWithMerchant}
                         >
                           <MessageSquare className="w-4 h-4 mr-2" />
                           Chat with Merchant
@@ -556,7 +568,7 @@ const ProductDetail = () => {
                           variant="outline"
                           className="w-full"
                           size="lg"
-                          onClick={() => setIsChatOpen(true)}
+                          onClick={handleChatWithMerchant}
                         >
                           <MessageSquare className="w-4 h-4 mr-2" />
                           Chat with Merchant

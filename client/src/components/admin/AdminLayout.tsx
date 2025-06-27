@@ -83,7 +83,7 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({
               </div>
               <div>
                 <h1 className="text-lg font-semibold text-gray-900">Admin Panel</h1>
-                <p className="text-xs text-gray-500">LocalPick Market</p>
+                <p className="text-xs text-gray-500">LocalPick</p>
               </div>
             </div>
             <Button

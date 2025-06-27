@@ -34,16 +34,16 @@ export const LogoHeader: React.FC<LogoHeaderProps> = ({
         "flex items-center space-x-2 hover:opacity-80 transition-opacity group",
         className
       )}
-      aria-label="LocalPick Market - Go to home"
+      aria-label="LocalPick - Go to home"
     >
       {/* Logo Icon */}
       <div className={cn(
-        "rounded-xl bg-brand-gradient flex items-center justify-center text-white shadow-md group-hover:shadow-lg transition-shadow",
-        isCompact ? "w-8 h-8" : "w-10 h-10 sm:w-12 sm:h-12"
+        "rounded-lg bg-brand-gradient flex items-center justify-center text-white shadow-md group-hover:shadow-lg transition-shadow",
+        isCompact ? "w-6 h-6" : "w-8 h-8"
       )}>
         <Store className={cn(
           "text-white",
-          isCompact ? "w-4 h-4" : "w-5 h-5 sm:w-6 sm:h-6"
+          isCompact ? "w-3 h-3" : "w-5 h-5"
         )} />
       </div>
 
@@ -52,9 +52,9 @@ export const LogoHeader: React.FC<LogoHeaderProps> = ({
         <div className="flex flex-col">
           <h1 className={cn(
             "font-bold text-brand-gradient leading-tight",
-            "text-lg sm:text-xl md:text-2xl"
+            "text-xl"
           )}>
-            LocalPick Market
+            LocalPick
           </h1>
           {showTagline && (
             <p className="text-xs sm:text-sm text-muted-foreground leading-tight">
@@ -69,7 +69,7 @@ export const LogoHeader: React.FC<LogoHeaderProps> = ({
         "sm:hidden flex flex-col",
         isCompact && "hidden"
       )}>
-        <h1 className="font-bold text-brand-gradient text-lg leading-tight">
+        <h1 className="font-bold text-brand-gradient text-xl leading-tight">
           LocalPick
         </h1>
       </div>

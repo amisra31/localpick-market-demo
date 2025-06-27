@@ -118,7 +118,7 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({
               </div>
               <div>
                 <h3 className="font-semibold text-brand-primary">Admin Panel</h3>
-                <p className="text-sm text-muted-foreground">LocalPick Market</p>
+                <p className="text-sm text-muted-foreground">LocalPick</p>
               </div>
             </div>
 

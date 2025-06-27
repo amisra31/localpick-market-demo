@@ -6,6 +6,8 @@ import { LoginButton } from '@/components/ui/LoginButton';
 import { Button } from '@/components/ui/button';
 import { SimpleLocationAutocomplete } from '@/components/SimpleLocationAutocomplete';
 import { Menu, X, MapPin } from 'lucide-react';
+import { useAuth } from '@/contexts/AuthContext';
+import { useLocation as useLocationContext } from '@/contexts/LocationContext';
 import { cn } from '@/lib/utils';
 
 interface AppLayoutProps {
@@ -18,6 +20,7 @@ interface AppLayoutProps {
   className?: string;
   headerActions?: React.ReactNode;
   variant?: 'default' | 'admin' | 'merchant' | 'customer';
+  showAuth?: boolean;
 }
 
 export const AppLayout: React.FC<AppLayoutProps> = ({
@@ -29,10 +32,13 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
   userLocation,
   className,
   headerActions,
-  variant = 'default'
+  variant = 'default',
+  showAuth = true
 }) => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const location = useLocation();
+  const { isAuthenticated } = useAuth();
+  const { userLocation: globalUserLocation, setLocation } = useLocationContext();
 
   // Close mobile menu on route change
   useEffect(() => {
@@ -64,22 +70,25 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
 
             {/* Center Section: Search & Location (Desktop) */}
             {showSearch && (
-              <div className="hidden md:flex flex-1 max-w-4xl mx-8 items-center gap-3">
+              <div className="hidden md:flex flex-1 max-w-3xl mx-4 items-center gap-3">
                 <SearchBar
                   placeholder={searchPlaceholder}
                   onSearch={onSearch}
                   variant="header"
                   size="md"
-                  className="flex-1"
+                  className="flex-1 max-w-lg"
                 />
                 {/* Location Selector for Customer pages */}
                 {variant === 'customer' && onLocationChange && (
                   <div className="flex items-center gap-2 min-w-0">
                     <MapPin className="w-4 h-4 text-muted-foreground flex-shrink-0" />
                     <SimpleLocationAutocomplete
-                      value={userLocation || 'Mariposa, CA'}
+                      value={userLocation || globalUserLocation}
                       onChange={(location) => {}}
-                      onLocationSelect={onLocationChange}
+                      onLocationSelect={(location, coordinates) => {
+                        setLocation(location, coordinates);
+                        onLocationChange?.(location, coordinates);
+                      }}
                       placeholder="Location..."
                       className="w-48"
                     />
@@ -97,15 +106,29 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
                 </div>
               )}
 
-              {/* Login/User Menu */}
-              <div className="hidden sm:block">
-                <LoginButton 
-                  variant="header" 
-                  size="md" 
-                  showRole={true}
-                  showAvatar={true}
-                />
-              </div>
+              {/* Desktop Login/User Menu */}
+              {showAuth && (
+                <div className="hidden sm:block">
+                  <LoginButton 
+                    variant="header" 
+                    size="md" 
+                    showRole={true}
+                    showAvatar={true}
+                  />
+                </div>
+              )}
+
+              {/* Mobile: Show compact login button for unauthenticated users */}
+              {showAuth && !isAuthenticated && (
+                <div className="sm:hidden">
+                  <LoginButton 
+                    variant="compact" 
+                    size="sm" 
+                    showRole={false}
+                    showAvatar={false}
+                  />
+                </div>
+              )}
 
               {/* Mobile Menu Button */}
               <Button
@@ -126,26 +149,40 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
 
           {/* Mobile Search Bar & Location */}
           {showSearch && (
-            <div className="md:hidden pb-3 space-y-3">
-              <SearchBar
-                placeholder={searchPlaceholder}
-                onSearch={onSearch}
-                variant="header"
-                size="md"
-                className="w-full"
-              />
-              {/* Mobile Location Selector for Customer pages */}
-              {variant === 'customer' && onLocationChange && (
+            <div className="md:hidden pb-3">
+              {variant === 'customer' && onLocationChange ? (
                 <div className="flex items-center gap-2">
-                  <MapPin className="w-4 h-4 text-muted-foreground flex-shrink-0" />
-                  <SimpleLocationAutocomplete
-                    value={userLocation || 'Mariposa, CA'}
-                    onChange={(location) => {}}
-                    onLocationSelect={onLocationChange}
-                    placeholder="Enter location..."
-                    className="flex-1"
+                  {/* Search bar takes ~2x width of location */}
+                  <SearchBar
+                    placeholder={searchPlaceholder}
+                    onSearch={onSearch}
+                    variant="header"
+                    size="md"
+                    className="flex-[2]"
                   />
+                  {/* Location selector takes 1x width */}
+                  <div className="flex items-center gap-1 flex-[1] min-w-0">
+                    <MapPin className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+                    <SimpleLocationAutocomplete
+                      value={userLocation || globalUserLocation}
+                      onChange={(location) => {}}
+                      onLocationSelect={(location, coordinates) => {
+                        setLocation(location, coordinates);
+                        onLocationChange?.(location, coordinates);
+                      }}
+                      placeholder="Location..."
+                      className="flex-1 min-w-0"
+                    />
+                  </div>
                 </div>
+              ) : (
+                <SearchBar
+                  placeholder={searchPlaceholder}
+                  onSearch={onSearch}
+                  variant="header"
+                  size="md"
+                  className="w-full"
+                />
               )}
             </div>
           )}
@@ -171,15 +208,17 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
                 )}
 
                 {/* Mobile Login/User Menu */}
-                <div className="flex justify-center">
-                  <LoginButton 
-                    variant="default" 
-                    size="md" 
-                    showRole={true}
-                    showAvatar={true}
-                    className="w-full max-w-xs"
-                  />
-                </div>
+                {showAuth && (
+                  <div className="flex justify-center">
+                    <LoginButton 
+                      variant="default" 
+                      size="md" 
+                      showRole={true}
+                      showAvatar={true}
+                      className="w-full max-w-xs"
+                    />
+                  </div>
+                )}
               </div>
             </div>
           </>

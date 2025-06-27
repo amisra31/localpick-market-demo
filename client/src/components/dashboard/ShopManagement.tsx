@@ -181,7 +181,7 @@ export const ShopManagement: React.FC<ShopManagementProps> = ({ shop, onShopUpda
         onShopUpdate(newShop);
         toast({
           title: "Shop created successfully",
-          description: "Your shop is now live on LocalPick Market."
+          description: "Your shop is now live on LocalPick."
         });
       }
       setIsShopDialogOpen(false);
@@ -210,7 +210,7 @@ export const ShopManagement: React.FC<ShopManagementProps> = ({ shop, onShopUpda
           </div>
           <h3 className="text-xl font-semibold text-gray-900 mb-2">Set Up Your Shop</h3>
           <p className="text-gray-600 mb-6 max-w-md mx-auto">
-            Create your shop profile to start selling on LocalPick Market. 
+            Create your shop profile to start selling on LocalPick. 
             Add your business details, contact information, and operating hours.
           </p>
           <Button 
