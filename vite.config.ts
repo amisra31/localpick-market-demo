@@ -30,7 +30,7 @@ export default defineConfig({
   },
   server: {
     allowedHosts: [
-      "501629e5-c9eb-493e-9929-7fb2b13d721f-00-2dbb78tsnbuv6.kirk.replit.dev",
+      "66cde07c-4dbf-4d57-aea3-fe16da7383fd-00-2oho8sc77oct0.worf.replit.dev",
     ],
   },
 });
