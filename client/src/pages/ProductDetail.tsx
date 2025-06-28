@@ -39,7 +39,9 @@ const ProductDetail = () => {
   const { getTotalUnreadCount } = useChatThreads();
 
   const getReservationCount = () => {
-    const reservations = JSON.parse(localStorage.getItem('localpick_customer_reservations') || '[]');
+    if (!user) return 0;
+    const userSpecificKey = `localpick_customer_reservations_${user.id}`;
+    const reservations = JSON.parse(localStorage.getItem(userSpecificKey) || '[]');
     return reservations.length;
   };
 
@@ -102,19 +104,21 @@ const ProductDetail = () => {
         customerId: user?.id || `guest_${Date.now()}`
       });
 
-      // Also store in localStorage for backward compatibility with customer reservations page
-      const existingReservations = JSON.parse(localStorage.getItem('localpick_customer_reservations') || '[]');
+      // Also store in localStorage for backward compatibility with customer reservations page (user-specific)
+      const userSpecificKey = `localpick_customer_reservations_${user?.id || 'guest'}`;
+      const existingReservations = JSON.parse(localStorage.getItem(userSpecificKey) || '[]');
       existingReservations.push({
         id: reservation.id,
         productId: product.id,
         shopId: shop.id,
+        customerId: user?.id || `guest_${Date.now()}`,
         customerName: customerName.trim(),
         email: customerEmail.trim() || undefined,
         timestamp: reservation.createdAt,
         productName: product.name,
         shopName: shop.name
       });
-      localStorage.setItem('localpick_customer_reservations', JSON.stringify(existingReservations));
+      localStorage.setItem(userSpecificKey, JSON.stringify(existingReservations));
 
       // Update product stock in state
       setProduct(prev => prev ? { ...prev, stock: prev.stock - 1 } : null);

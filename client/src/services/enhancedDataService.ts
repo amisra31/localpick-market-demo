@@ -3,13 +3,23 @@ import { Shop, Product, Order, OrderMessage, OrderStatus } from '@/types';
 import { userShopService } from './userShopService';
 
 export class EnhancedDataService {
-  private baseUrl = '/api';
+  private baseUrl: string;
   private eventSource: EventSource | null = null;
   private subscribers: Map<string, Set<(data: any) => void>> = new Map();
 
   constructor() {
+    // Set baseUrl dynamically for production compatibility
+    this.baseUrl = this.getBaseUrl() + '/api';
     // Initialize Server-Sent Events for real-time updates
     this.initializeSSE();
+  }
+
+  private getBaseUrl(): string {
+    // In production, use the current origin
+    if (typeof window !== 'undefined') {
+      return window.location.origin;
+    }
+    return '';
   }
 
   // Get authentication headers for API requests
@@ -453,8 +463,10 @@ export class EnhancedDataService {
 
   async getReservationsByCustomer(customerId: string): Promise<any[]> {
     try {
-      console.log(`📦🔍 FETCHING RESERVATIONS: customerId=${customerId}`);
-      const response = await fetch(`${this.baseUrl}/orders?customerId=${customerId}`);
+      console.log(`📦🔍 FETCHING RESERVATIONS: customerId=${customerId}, baseUrl=${this.baseUrl}`);
+      const response = await fetch(`${this.baseUrl}/orders?customerId=${customerId}`, {
+        headers: this.getAuthHeaders()
+      });
       
       console.log(`📦📡 RESERVATIONS API RESPONSE:`, {
         status: response.status,
