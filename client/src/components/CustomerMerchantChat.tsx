@@ -33,6 +33,7 @@ export const CustomerMerchantChat: React.FC<CustomerMerchantChatProps> = ({
   const [isLoading, setIsLoading] = useState(false);
   const [isSending, setIsSending] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
 
   // WebSocket connection for real-time messaging
   const {
@@ -91,6 +92,23 @@ export const CustomerMerchantChat: React.FC<CustomerMerchantChatProps> = ({
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
+
+  useEffect(() => {
+    // Auto-focus input when dialog opens
+    if (isOpen && inputRef.current) {
+      // Add small delay to ensure dialog is fully rendered
+      setTimeout(() => {
+        inputRef.current?.focus();
+      }, 100);
+    }
+  }, [isOpen]);
+
+  useEffect(() => {
+    // Re-focus input after sending a message
+    if (!isSending && isOpen && inputRef.current) {
+      inputRef.current.focus();
+    }
+  }, [isSending, isOpen]);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -258,12 +276,14 @@ export const CustomerMerchantChat: React.FC<CustomerMerchantChatProps> = ({
         <div className="p-4 border-t bg-gray-50">
           <div className="flex gap-2">
             <Input
+              ref={inputRef}
               value={newMessage}
               onChange={(e) => setNewMessage(e.target.value)}
               onKeyPress={handleKeyPress}
               placeholder="Type your message..."
               disabled={isSending}
               className="flex-1"
+              autoFocus
             />
             <Button
               onClick={sendMessage}

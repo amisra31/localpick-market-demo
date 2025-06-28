@@ -12,12 +12,13 @@ import { enhancedDataService } from "@/services/enhancedDataService";
 import { useChatThreads } from "@/hooks/useChatThreads";
 import { Product, Shop } from "@/types";
 import { toast } from "@/hooks/use-toast";
-import { ArrowLeft, MapPin, Clock, ShoppingBag, ExternalLink, LogIn, MessageSquare, Navigation, Heart, Share, Copy, Check, Search } from "lucide-react";
+import { ArrowLeft, MapPin, Clock, ShoppingBag, ExternalLink, LogIn, Navigation, Heart, Share, Copy, Check, Search, MessageSquare } from "lucide-react";
 import { SignOutButton } from "@/components/SignOutButton";
 import { ImageWithFallback } from "@/components/ui/ImageWithFallback";
 import { CustomerMerchantChat } from "@/components/CustomerMerchantChat";
 import { generatePlusCode, copyToClipboard, openDirections, shareProduct, generateMapEmbedUrl } from "@/utils/locationUtils";
 import { useOrderCount } from "@/hooks/useOrderCount";
+import { ChatButton } from "@/components/ui/ChatButton";
 import { GoogleMap } from "@/components/GoogleMap";
 import { AuthHeader } from "@/components/auth/AuthHeader";
 import { authApiService } from "@/services/authApiService";
@@ -314,17 +315,7 @@ const ProductDetail = () => {
             <div className="flex items-center space-x-3">
               {isAuthenticated && (
                 <>
-                  <Link to="/chat-overview">
-                    <Button variant="outline" size="sm" className="gap-2 hover:bg-blue-50 transition-colors relative">
-                      <MessageSquare className="w-4 h-4" />
-                      <span className="hidden sm:inline">Chat</span>
-                      {getTotalUnreadCount() > 0 && (
-                        <Badge variant="destructive" className="absolute -top-2 -right-2 h-5 min-w-[20px] text-xs">
-                          {getTotalUnreadCount()}
-                        </Badge>
-                      )}
-                    </Button>
-                  </Link>
+                  <ChatButton size="sm" />
                   <Link to="/my-reservations">
                     <Button variant="outline" size="sm" className="gap-2 hover:bg-blue-50 transition-colors">
                       <ShoppingBag className="w-4 h-4" />

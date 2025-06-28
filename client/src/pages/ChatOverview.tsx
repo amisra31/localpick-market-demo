@@ -58,9 +58,9 @@ const ChatOverview = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="h-screen bg-gray-50 flex flex-col overflow-hidden">
       {/* Header */}
-      <header className="bg-white/95 backdrop-blur-md border-b border-gray-200/50 sticky top-0 z-50 shadow-sm">
+      <header className="bg-white/95 backdrop-blur-md border-b border-gray-200/50 shadow-sm flex-shrink-0">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex items-center justify-between">
             {/* Logo */}
@@ -103,7 +103,7 @@ const ChatOverview = () => {
         </div>
       </header>
 
-      <div className="container mx-auto px-4 py-8 max-w-7xl">
+      <div className="container mx-auto px-4 py-4 max-w-7xl flex-1 flex flex-col">
         {error && (
           <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
             <p className="text-red-800">{error}</p>
@@ -127,8 +127,8 @@ const ChatOverview = () => {
             </Link>
           </div>
         ) : (
-          <Card className="h-[700px]">
-            <CardContent className="p-0 h-full">
+          <Card className="h-full flex flex-col">
+            <CardContent className="p-0 h-full overflow-hidden">
               <Tabs 
                 value={activeTab} 
                 onValueChange={setActiveTab}

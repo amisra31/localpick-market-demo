@@ -24,6 +24,7 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
   const [newMessage, setNewMessage] = useState('');
   const [isSending, setIsSending] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
   
   // Use thread messages directly instead of local state
   const messages = thread.messages || [];
@@ -45,6 +46,20 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
       onMarkAsRead();
     }
   }, [thread.shop_id]);
+
+  useEffect(() => {
+    // Auto-focus input when component mounts or thread changes
+    if (inputRef.current) {
+      inputRef.current.focus();
+    }
+  }, [thread.shop_id]);
+
+  useEffect(() => {
+    // Re-focus input after sending a message
+    if (!isSending && inputRef.current) {
+      inputRef.current.focus();
+    }
+  }, [isSending]);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -168,12 +183,14 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
       <div className="p-4 border-t bg-gray-100">
         <div className="flex gap-2">
           <Input
+            ref={inputRef}
             value={newMessage}
             onChange={(e) => setNewMessage(e.target.value)}
             onKeyPress={handleKeyPress}
             placeholder={`Message ${thread.shop_name}...`}
             disabled={isSending}
             className="flex-1"
+            autoFocus
           />
           <Button
             onClick={handleSendMessage}

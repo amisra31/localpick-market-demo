@@ -11,12 +11,13 @@ import { enhancedDataService } from "@/services/enhancedDataService";
 import { useProductSync, useShopSync } from "@/hooks/useRealTimeSync";
 import { useChatThreads } from "@/hooks/useChatThreads";
 import { ProductWithShop, Shop } from "@/types";
-import { Search, MapPin, Clock, ShoppingBag, Eye, Store, Settings, BarChart3, Navigation, Coffee, Gift, Smartphone, Baby, Dumbbell, Plus, ChevronLeft, ChevronRight, MessageSquare } from "lucide-react";
+import { Search, MapPin, Clock, ShoppingBag, Eye, Store, Settings, BarChart3, Navigation, Coffee, Gift, Smartphone, Baby, Dumbbell, Plus, ChevronLeft, ChevronRight } from "lucide-react";
 import { ProductCard } from "@/components/ProductCard";
 import { SimpleLocationAutocomplete } from "@/components/SimpleLocationAutocomplete";
 import { ImageWithFallback } from "@/components/ui/ImageWithFallback";
 import { generatePlusCode } from "@/utils/locationUtils";
 import { useOrderCount } from "@/hooks/useOrderCount";
+import { ChatButton } from "@/components/ui/ChatButton";
 
 const Index = () => {
   const { user, isAuthenticated, loading } = useAuth();
@@ -500,17 +501,7 @@ const Index = () => {
             <div className="flex items-center space-x-3">
               {isAuthenticated && (
                 <>
-                  <Link to="/chat">
-                    <Button variant="outline" size="default" className="gap-2 hover:bg-blue-50 transition-colors relative">
-                      <MessageSquare className="w-4 h-4" />
-                      <span className="hidden sm:inline">Chat</span>
-                      {getTotalUnreadCount() > 0 && (
-                        <Badge variant="destructive" className="absolute -top-2 -right-2 h-5 min-w-[20px] text-xs">
-                          {getTotalUnreadCount()}
-                        </Badge>
-                      )}
-                    </Button>
-                  </Link>
+                  <ChatButton />
                   <Link to="/my-reservations">
                     <Button variant="outline" size="default" className="gap-2 hover:bg-blue-50 transition-colors">
                       <ShoppingBag className="w-4 h-4" />
