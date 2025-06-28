@@ -95,17 +95,17 @@ export const useAuth = () => {
 
 // Demo users for authentication
 const demoUsers = [
-  { id: '1', email: 'customer@demo.com', password: 'demo123', role: 'user' as UserRole, name: 'Customer' },
-  { id: '2', email: 'merchant@demo.com', password: 'demo123', role: 'merchant' as UserRole, name: 'Merchant Demo', shop_id: 'shop_001' },
-  { id: '3', email: 'admin@demo.com', password: 'demo123', role: 'admin' as UserRole, name: 'Admin Demo' },
-  { id: 'owner_001', email: 'sarah@brooklynbites.com', password: 'demo123', role: 'merchant' as UserRole, name: 'Sarah Johnson', shop_id: 'shop_001' },
-  { id: 'owner_002', email: 'mike@maplecrafts.com', password: 'demo123', role: 'merchant' as UserRole, name: 'Mike Chen', shop_id: 'shop_002' },
-  { id: 'owner_003', email: 'emma@sunsetsouvenirs.com', password: 'demo123', role: 'merchant' as UserRole, name: 'Emma Rodriguez', shop_id: 'shop_003' },
+  { id: '1', email: 'customer@demo.com', password: 'Lp345@#$', role: 'user' as UserRole, name: 'Customer' },
+  { id: '2', email: 'merchant@demo.com', password: 'Lp345@#$', role: 'merchant' as UserRole, name: 'Merchant Demo', shop_id: 'shop_001' },
+  { id: '3', email: 'admin@demo.com', password: 'Lp345@#$', role: 'admin' as UserRole, name: 'Admin Demo' },
+  { id: 'owner_001', email: 'sarah@brooklynbites.com', password: 'Lp345@#$', role: 'merchant' as UserRole, name: 'Sarah Johnson', shop_id: 'shop_001' },
+  { id: 'owner_002', email: 'mike@maplecrafts.com', password: 'Lp345@#$', role: 'merchant' as UserRole, name: 'Mike Chen', shop_id: 'shop_002' },
+  { id: 'owner_003', email: 'emma@sunsetsouvenirs.com', password: 'Lp345@#$', role: 'merchant' as UserRole, name: 'Emma Rodriguez', shop_id: 'shop_003' },
   // Missing merchant accounts requested by user
-  { id: 'sticks_owner', email: 'sticks_coffee_shopowner@demo.com', password: 'demo123', role: 'merchant' as UserRole, name: 'Sticks Coffee Owner', shop_id: '6k-vyXS9iM97p7jCfXqVn' },
-  { id: 'yosemite_owner', email: 'yosemite_gifts_shopowner@demo.com', password: 'demo123', role: 'merchant' as UserRole, name: 'Yosemite Gifts Owner', shop_id: 'T1eJ-LdhpXprNSV0ZAFXq' },
-  { id: 'mariposa_owner', email: 'mariposa_marketplace_shopowner@demo.com', password: 'demo123', role: 'merchant' as UserRole, name: 'Mariposa Marketplace Owner', shop_id: 'BByngmaE_569eC_jxc6d6' },
-  { id: 'cinnamon_owner', email: 'cinnamon_roll_bakery_shopowner@demo.com', password: 'demo123', role: 'merchant' as UserRole, name: 'Cinnamon Roll Bakery Owner', shop_id: 'nFL7pcsejHPWuV3QgaOfa' }
+  { id: 'sticks_owner', email: 'sticks_coffee_shopowner@demo.com', password: 'Lp345@#$', role: 'merchant' as UserRole, name: 'Sticks Coffee Owner', shop_id: '6k-vyXS9iM97p7jCfXqVn' },
+  { id: 'yosemite_owner', email: 'yosemite_gifts_shopowner@demo.com', password: 'Lp345@#$', role: 'merchant' as UserRole, name: 'Yosemite Gifts Owner', shop_id: 'T1eJ-LdhpXprNSV0ZAFXq' },
+  { id: 'mariposa_owner', email: 'mariposa_marketplace_shopowner@demo.com', password: 'Lp345@#$', role: 'merchant' as UserRole, name: 'Mariposa Marketplace Owner', shop_id: 'BByngmaE_569eC_jxc6d6' },
+  { id: 'cinnamon_owner', email: 'cinnamon_roll_bakery_shopowner@demo.com', password: 'Lp345@#$', role: 'merchant' as UserRole, name: 'Cinnamon Roll Bakery Owner', shop_id: 'nFL7pcsejHPWuV3QgaOfa' }
 ];
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {

@@ -55,9 +55,9 @@ export class MemStorage implements IStorage {
   private initializeData() {
     // Create demo users
     const demoUsers = [
-      { email: 'customer@demo.com', password: 'demo123', role: 'user' as const, name: 'Customer Demo' },
-      { email: 'merchant@demo.com', password: 'demo123', role: 'merchant' as const, name: 'Merchant Demo' },
-      { email: 'admin@demo.com', password: 'demo123', role: 'admin' as const, name: 'Admin Demo' }
+      { email: 'customer@demo.com', password: 'Lp345@#$', role: 'user' as const, name: 'Customer Demo' },
+      { email: 'merchant@demo.com', password: 'Lp345@#$', role: 'merchant' as const, name: 'Merchant Demo' },
+      { email: 'admin@demo.com', password: 'Lp345@#$', role: 'admin' as const, name: 'Admin Demo' }
     ];
 
     demoUsers.forEach(userData => {
