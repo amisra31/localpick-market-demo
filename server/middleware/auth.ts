@@ -75,23 +75,53 @@ export const authenticate = async (req: Request, res: Response, next: NextFuncti
         }
       }
       
-      // Try regular JWT verification
-      const decoded = jwt.verify(token, JWT_SECRET) as any;
-      
-      // Verify user still exists in database
-      const users = await db.select().from(schema.users).where(eq(schema.users.id, decoded.userId));
-      
-      if (users.length === 0) {
-        return res.status(401).json({ error: 'User not found' });
+      // Try regular JWT verification or Supabase JWT
+      let decoded: any;
+      try {
+        // First try with JWT_SECRET (for demo users)
+        decoded = jwt.verify(token, JWT_SECRET) as any;
+      } catch (jwtError) {
+        // If that fails, try Supabase JWT
+        try {
+          const payload = JSON.parse(atob(token.split('.')[1]));
+          
+          if (payload.sub && payload.email) {
+            // This is a Supabase token
+            const userMetadata = payload.user_metadata || {};
+            const appMetadata = payload.app_metadata || {};
+            
+            req.user = {
+              id: payload.sub,
+              email: payload.email,
+              role: (userMetadata.role || appMetadata.role || payload.role || 'user') as AuthenticatedUser['role'],
+              name: userMetadata.name || appMetadata.name || payload.email?.split('@')[0],
+              shop_id: userMetadata.shop_id || appMetadata.shop_id
+            };
+            return next();
+          }
+        } catch (supabaseError) {
+          throw jwtError;
+        }
+        throw jwtError;
       }
+      
+      // Handle demo user JWT tokens
+      if (decoded.userId) {
+        // Verify user still exists in database
+        const users = await db.select().from(schema.users).where(eq(schema.users.id, decoded.userId));
+        
+        if (users.length === 0) {
+          return res.status(401).json({ error: 'User not found' });
+        }
 
-      const user = users[0];
-      req.user = {
-        id: user.id,
-        email: user.email,
-        role: user.role as AuthenticatedUser['role'],
-        name: user.name || undefined
-      };
+        const user = users[0];
+        req.user = {
+          id: user.id,
+          email: user.email,
+          role: user.role as AuthenticatedUser['role'],
+          name: user.name || undefined
+        };
+      }
       
       next();
     } catch (jwtError) {

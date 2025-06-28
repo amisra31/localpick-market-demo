@@ -111,13 +111,6 @@ export function registerOrderRoutes(app: Express) {
       const { id } = req.params;
       const { status, notes } = req.body;
       
-      console.log(`🔄 Order status update API called:`, {
-        orderId: id,
-        newStatus: status,
-        notes,
-        userId: req.user?.id,
-        userRole: req.user?.role
-      });
       
       if (!req.user) {
         return res.status(401).json({ error: 'Authentication required' });
@@ -208,15 +201,7 @@ export function registerOrderRoutes(app: Express) {
     try {
       const { id } = req.params;
       
-      console.log(`🗑️ DELETE ORDER REQUEST:`, {
-        orderId: id,
-        userId: req.user?.id,
-        userRole: req.user?.role,
-        timestamp: new Date().toISOString()
-      });
-      
       if (!req.user) {
-        console.log(`🗑️❌ DELETE FAILED: No authentication`);
         return res.status(401).json({ error: 'Authentication required' });
       }
       
@@ -227,21 +212,15 @@ export function registerOrderRoutes(app: Express) {
         .limit(1);
       
       if (!existingOrder) {
-        console.log(`🗑️❌ DELETE FAILED: Order ${id} not found`);
         return res.status(404).json({ error: 'Order not found' });
       }
       
-      console.log(`🗑️🔍 DELETE ORDER CHECK:`, {
-        orderId: id,
-        orderCustomerId: existingOrder.customer_id,
-        requestUserId: req.user.id,
-        userRole: req.user.role,
-        orderStatus: existingOrder.status
-      });
-      
       // Verify that the authenticated user is the customer who made this order or an admin
-      if (req.user.role !== 'admin' && req.user.id !== existingOrder.customer_id) {
-        console.log(`🗑️❌ DELETE FAILED: Permission denied`);
+      // Note: Supabase users have role 'user', treat them as customers for order deletion
+      const isAdmin = req.user.role === 'admin';
+      const isOrderOwner = req.user.id === existingOrder.customer_id;
+      
+      if (!isAdmin && !isOrderOwner) {
         return res.status(403).json({ error: 'You can only cancel your own orders' });
       }
       
@@ -249,27 +228,18 @@ export function registerOrderRoutes(app: Express) {
       const result = await OrderService.cancelOrder(
         id, 
         req.user.id, 
-        req.user.role === 'admin' ? 'admin' : 'customer'
+        isAdmin ? 'admin' : 'customer'
       );
       
-      console.log(`🗑️📊 DELETE RESULT:`, {
-        orderId: id,
-        success: result.success,
-        error: result.error
-      });
-      
       if (!result.success) {
-        console.log(`🗑️❌ DELETE FAILED: ${result.error}`);
         return res.status(400).json({ error: result.error });
       }
-      
-      console.log(`🗑️✅ DELETE SUCCESS: Order ${id} cancelled`);
       res.json({ 
         message: 'Order cancelled successfully',
         order: result.order 
       });
     } catch (error) {
-      console.error('🗑️💥 DELETE ERROR:', error);
+      console.error('Error cancelling order:', error);
       res.status(500).json({ error: 'Failed to cancel order' });
     }
   });

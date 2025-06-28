@@ -25,6 +25,7 @@ export function registerApiRoutes(app: Express) {
     });
   });
 
+
   // Register all modular route handlers
   registerShopRoutes(app);
   registerProductRoutes(app);
@@ -34,7 +35,6 @@ export function registerApiRoutes(app: Express) {
   
   // Register customer routes
   app.use('/api/customers', customersRoutes);
-  app.use('/api', customersRoutes);
   
   // Google Drive image proxy route with caching
   app.get('/api/proxy-image', async (req, res) => {

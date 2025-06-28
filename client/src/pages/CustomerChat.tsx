@@ -10,6 +10,7 @@ import { AuthHeader } from '@/components/auth/AuthHeader';
 import { CustomerChatInterface } from '@/components/CustomerChatInterface';
 import { DirectMessage, Shop } from '@/types';
 import { ArrowLeft, MessageSquare, Store, ShoppingBag, User, Clock } from 'lucide-react';
+import { useOrderCount } from '@/hooks/useOrderCount';
 
 interface ChatThread {
   shop_id: string;
@@ -25,6 +26,9 @@ const CustomerChat = () => {
   const [chatThreads, setChatThreads] = useState<ChatThread[]>([]);
   const [selectedThread, setSelectedThread] = useState<ChatThread | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  
+  // Order count hook for unified order count management
+  const { activeOrderCount } = useOrderCount();
 
   useEffect(() => {
     if (isAuthenticated && user) {
@@ -72,8 +76,7 @@ const CustomerChat = () => {
   };
 
   const getReservationCount = () => {
-    const reservations = JSON.parse(localStorage.getItem('localpick_customer_reservations') || '[]');
-    return reservations.length;
+    return activeOrderCount;
   };
 
   const totalUnreadMessages = chatThreads.reduce((sum, thread) => sum + thread.unread_count, 0);

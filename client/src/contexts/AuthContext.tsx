@@ -2,6 +2,7 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import { clearNavigationCache } from '@/utils/roleNavigation';
+import { setAuthContext } from '@/services/authApiService';
 
 // Helper function to get the correct base URL for email redirects
 const getBaseUrl = (): string => {
@@ -79,6 +80,7 @@ interface AuthContextType {
   isAuthenticated: boolean;
   setUser: (user: AuthUser | null) => void;
   resendVerification: (email: string) => Promise<{ data: any; error: any }>;
+  setPreventLogout: (prevent: boolean) => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -109,24 +111,27 @@ const demoUsers = [
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [loading, setLoading] = useState(true);
+  const [preventLogout, setPreventLogout] = useState(false);
 
   useEffect(() => {
     // Check for existing Supabase session
     const getSession = async () => {
       try {
-        const { data: { session } } = await supabase.auth.getSession();
+        const { data: { session }, error } = await supabase.auth.getSession();
         
-        if (session && session.user.email_confirmed_at) {
-          // Only set user if email is verified
+        if (!error && session && session.user.email_confirmed_at) {
+          // Only set user if email is verified and session is valid
           const authUser: AuthUser = {
             id: session.user.id,
             email: session.user.email!,
             role: session.user.user_metadata?.role || 'user',
             name: session.user.user_metadata?.name || session.user.email?.split('@')[0],
-            shop_id: session.user.user_metadata?.shop_id
+            shop_id: session.user.user_metadata?.shop_id,
+            token: session.access_token
           };
           setUser(authUser);
           localStorage.setItem('localpick_user', JSON.stringify(authUser));
+          localStorage.setItem('localpick_token', session.access_token);
         } else {
           // Clear any invalid session and check localStorage for demo users
           if (session && !session.user.email_confirmed_at) {
@@ -182,35 +187,62 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     getSession();
 
 
-    // Listen for auth changes
+    // Listen for auth changes and token refresh
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
-        if (session && session.user.email_confirmed_at) {
-          // Only set user if email is verified
+        console.log('🔐 Auth state change:', { event, hasSession: !!session, emailConfirmed: session?.user.email_confirmed_at });
+        
+        if (event === 'TOKEN_REFRESHED' || (session && session.user.email_confirmed_at)) {
+          // Handle token refresh or valid session
           const authUser: AuthUser = {
             id: session.user.id,
             email: session.user.email!,
             role: session.user.user_metadata?.role || 'user',
             name: session.user.user_metadata?.name || session.user.email?.split('@')[0],
-            shop_id: session.user.user_metadata?.shop_id
+            shop_id: session.user.user_metadata?.shop_id,
+            token: session.access_token
           };
           setUser(authUser);
           localStorage.setItem('localpick_user', JSON.stringify(authUser));
+          localStorage.setItem('localpick_token', session.access_token);
         } else if (event === 'SIGNED_OUT') {
+          console.log('🔐 SIGNED_OUT event triggered - checking if should clear user', { preventLogout });
+          
+          // If we're preventing logout (due to failed refresh), ignore this SIGNED_OUT event
+          if (preventLogout) {
+            console.log('🔐 Ignoring SIGNED_OUT event due to preventLogout flag');
+            setPreventLogout(false); // Reset the flag
+            return;
+          }
+          
           // Keep demo users in localStorage, only clear Supabase users
           const savedUser = localStorage.getItem('localpick_user');
           if (savedUser) {
             try {
               const parsedUser = JSON.parse(savedUser);
-              if (!parsedUser || !demoUsers.some(u => u.email === parsedUser.email)) {
+              const isDemoUser = demoUsers.some(u => u.email === parsedUser.email);
+              console.log('🔐 User check:', { 
+                email: parsedUser.email, 
+                isDemoUser,
+                willKeepUser: isDemoUser 
+              });
+              
+              if (!parsedUser || !isDemoUser) {
+                console.log('🔐 Clearing Supabase user due to SIGNED_OUT');
                 setUser(null);
                 localStorage.removeItem('localpick_user');
+                localStorage.removeItem('localpick_token');
+              } else {
+                console.log('🔐 Keeping demo user, not clearing');
               }
             } catch (error) {
+              console.log('🔐 Error parsing saved user, clearing all:', error);
               setUser(null);
               localStorage.removeItem('localpick_user');
+              localStorage.removeItem('localpick_token');
             }
           } else {
+            console.log('🔐 No saved user, clearing state');
             setUser(null);
           }
         }
@@ -267,11 +299,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           email: data.user.email!,
           role: data.user.user_metadata?.role || 'user',
           name: data.user.user_metadata?.name || data.user.email?.split('@')[0],
-          shop_id: data.user.user_metadata?.shop_id
+          shop_id: data.user.user_metadata?.shop_id,
+          token: data.session?.access_token
         };
 
         setUser(authUser);
         localStorage.setItem('localpick_user', JSON.stringify(authUser));
+        if (data.session?.access_token) {
+          localStorage.setItem('localpick_token', data.session.access_token);
+        }
 
         return { data: { user: authUser }, error: null };
       }
@@ -326,6 +362,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     await supabase.auth.signOut();
     setUser(null);
     localStorage.removeItem('localpick_user');
+    localStorage.removeItem('localpick_token');
     
     // Clear all cached routes and navigation state to prevent route reuse
     clearNavigationCache();
@@ -371,8 +408,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     canAccessRoute,
     isAuthenticated: !!user,
     setUser,
-    resendVerification
+    resendVerification,
+    setPreventLogout
   };
+
+  // Set auth context for authApiService to use
+  useEffect(() => {
+    setAuthContext(value);
+  }, [value]);
 
   return (
     <AuthContext.Provider value={value}>

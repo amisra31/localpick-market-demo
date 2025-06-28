@@ -8,6 +8,7 @@ import { AuthHeader } from '@/components/auth/AuthHeader';
 import { ChatWindow } from '@/components/chat/ChatWindow';
 import { useChatThreads } from '@/hooks/useChatThreads';
 import { ArrowLeft, MessageSquare, ShoppingBag, Store, Loader2 } from 'lucide-react';
+import { useOrderCount } from '@/hooks/useOrderCount';
 
 const ChatOverview = () => {
   const { 
@@ -28,9 +29,11 @@ const ChatOverview = () => {
     }
   }, [threads, activeTab]);
 
+  // Order count hook for unified order count management
+  const { activeOrderCount } = useOrderCount();
+  
   const getReservationCount = () => {
-    const reservations = JSON.parse(localStorage.getItem('localpick_customer_reservations') || '[]');
-    return reservations.length;
+    return activeOrderCount;
   };
 
   const handleSendMessage = async (shopId: string, message: string) => {

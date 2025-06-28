@@ -17,8 +17,10 @@ import { SignOutButton } from "@/components/SignOutButton";
 import { ImageWithFallback } from "@/components/ui/ImageWithFallback";
 import { CustomerMerchantChat } from "@/components/CustomerMerchantChat";
 import { generatePlusCode, copyToClipboard, openDirections, shareProduct, generateMapEmbedUrl } from "@/utils/locationUtils";
+import { useOrderCount } from "@/hooks/useOrderCount";
 import { GoogleMap } from "@/components/GoogleMap";
 import { AuthHeader } from "@/components/auth/AuthHeader";
+import { authApiService } from "@/services/authApiService";
 
 const ProductDetail = () => {
   const { id } = useParams<{ id: string }>();
@@ -37,12 +39,12 @@ const ProductDetail = () => {
   
   // Chat threads for unread count
   const { getTotalUnreadCount } = useChatThreads();
+  
+  // Order count hook for unified order count management
+  const { activeOrderCount, incrementOrderCount, refreshOrderCount } = useOrderCount();
 
   const getReservationCount = () => {
-    if (!user) return 0;
-    const userSpecificKey = `localpick_customer_reservations_${user.id}`;
-    const reservations = JSON.parse(localStorage.getItem(userSpecificKey) || '[]');
-    return reservations.length;
+    return activeOrderCount;
   };
 
   useEffect(() => {
@@ -128,6 +130,9 @@ const ProductDetail = () => {
         description: `${product.name} has been reserved for pickup at ${shop.name}.`
       });
 
+      // Update order count immediately for better UX
+      incrementOrderCount();
+
       setIsReserveDialogOpen(false);
       setCustomerName("");
       setCustomerEmail("");
@@ -176,12 +181,7 @@ const ProductDetail = () => {
     if (!user || !product) return;
     
     try {
-      const response = await fetch(`/api/customers/${user.id}/wishlist`, {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('localpick_token')}`,
-          'Content-Type': 'application/json'
-        }
-      });
+      const response = await authApiService.authenticatedFetch(`/api/customers/${user.id}/wishlist`);
       
       if (response.ok) {
         const wishlistItems = await response.json();
@@ -203,12 +203,8 @@ const ProductDetail = () => {
     try {
       if (isWishlisted) {
         // Remove from wishlist - use product ID to find and delete
-        const response = await fetch(`/api/customers/${user.id}/wishlist/product/${product.id}`, {
-          method: 'DELETE',
-          headers: {
-            'Authorization': `Bearer ${localStorage.getItem('localpick_token')}`,
-            'Content-Type': 'application/json'
-          }
+        const response = await authApiService.authenticatedFetch(`/api/customers/${user.id}/wishlist/product/${product.id}`, {
+          method: 'DELETE'
         });
         
         if (response.ok) {
@@ -220,12 +216,8 @@ const ProductDetail = () => {
         }
       } else {
         // Add to wishlist
-        const response = await fetch(`/api/customers/${user.id}/wishlist`, {
+        const response = await authApiService.authenticatedFetch(`/api/customers/${user.id}/wishlist`, {
           method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${localStorage.getItem('localpick_token')}`,
-            'Content-Type': 'application/json'
-          },
           body: JSON.stringify({
             productId: product.id,
             shopId: shop.id

@@ -16,6 +16,7 @@ import { ProductCard } from "@/components/ProductCard";
 import { SimpleLocationAutocomplete } from "@/components/SimpleLocationAutocomplete";
 import { ImageWithFallback } from "@/components/ui/ImageWithFallback";
 import { generatePlusCode } from "@/utils/locationUtils";
+import { useOrderCount } from "@/hooks/useOrderCount";
 
 const Index = () => {
   const { user, isAuthenticated, loading } = useAuth();
@@ -36,6 +37,9 @@ const Index = () => {
   
   // Chat threads for unread count
   const { getTotalUnreadCount } = useChatThreads();
+  
+  // Order count hook for unified order count management
+  const { activeOrderCount } = useOrderCount();
 
   // Redirect users to their appropriate dashboards based on role
   useEffect(() => {
@@ -146,8 +150,7 @@ const Index = () => {
 
 
   const getReservationCount = () => {
-    const reservations = JSON.parse(localStorage.getItem('localpick_customer_reservations') || '[]');
-    return reservations.length;
+    return activeOrderCount;
   };
 
 

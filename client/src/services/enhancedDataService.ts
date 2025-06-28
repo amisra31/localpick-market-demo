@@ -1,6 +1,7 @@
 // Enhanced data service with real-time sync capabilities
 import { Shop, Product, Order, OrderMessage, OrderStatus } from '@/types';
 import { userShopService } from './userShopService';
+import { authApiService } from './authApiService';
 
 export class EnhancedDataService {
   private baseUrl: string;
@@ -464,9 +465,7 @@ export class EnhancedDataService {
   async getReservationsByCustomer(customerId: string): Promise<any[]> {
     try {
       console.log(`📦🔍 FETCHING RESERVATIONS: customerId=${customerId}, baseUrl=${this.baseUrl}`);
-      const response = await fetch(`${this.baseUrl}/orders?customerId=${customerId}`, {
-        headers: this.getAuthHeaders()
-      });
+      const response = await authApiService.authenticatedFetch(`${this.baseUrl}/orders?customerId=${customerId}`);
       
       console.log(`📦📡 RESERVATIONS API RESPONSE:`, {
         status: response.status,

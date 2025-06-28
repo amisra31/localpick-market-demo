@@ -8,6 +8,8 @@ import { useAuth } from "@/contexts/AuthContext";
 import { enhancedDataService } from "@/services/enhancedDataService";
 import { useChatWebSocket } from "@/hooks/useChatWebSocket";
 import { useCustomerOrderSync } from "@/hooks/useOrderWebSocket";
+import { authApiService } from "@/services/authApiService";
+import { useOrderCount } from "@/hooks/useOrderCount";
 import { ArrowLeft, Clock, MapPin, ShoppingBag, Store, MessageSquare, X, Heart, Trash2, AlertTriangle } from "lucide-react";
 import { SignOutButton } from "@/components/SignOutButton";
 import { AuthHeader } from "@/components/auth/AuthHeader";
@@ -57,6 +59,9 @@ const CustomerReservations = () => {
   const [removingFromWishlist, setRemovingFromWishlist] = useState<string | null>(null);
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [reservationToDelete, setReservationToDelete] = useState<CustomerReservation | null>(null);
+  
+  // Order count hook for unified order count management
+  const { activeOrderCount, decrementOrderCount, refreshOrderCount } = useOrderCount();
 
   // Real-time order status updates via WebSocket
   const { isConnected } = useCustomerOrderSync((updatedOrder) => {
@@ -199,8 +204,8 @@ const CustomerReservations = () => {
   };
 
   const getReservationCount = () => {
-    // Use current reservations state instead of localStorage to ensure accuracy
-    return reservations.length;
+    // Use unified order count for consistency across all pages
+    return activeOrderCount;
   };
 
   const handleDeleteClick = (reservation: CustomerReservation) => {
@@ -228,17 +233,20 @@ const CustomerReservations = () => {
       console.log('🗑️ Attempting to delete reservation:', {
         id: reservationId,
         userId: user.id,
-        customerName: reservationToDelete.customerName
+        customerName: reservationToDelete.customerName,
+        currentToken: localStorage.getItem('localpick_token')?.substring(0, 20) + '...'
       });
       
-      // Get base URL for API calls
+      // Use authenticated API service for proper token handling
       const baseUrl = window.location.origin;
-      const response = await fetch(`${baseUrl}/api/orders/${reservationId}`, {
-        method: 'DELETE',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('localpick_token')}`
-        }
+      const response = await authApiService.authenticatedFetch(`${baseUrl}/api/orders/${reservationId}`, {
+        method: 'DELETE'
+      });
+      
+      console.log('🗑️ Delete API response:', {
+        status: response.status,
+        ok: response.ok,
+        statusText: response.statusText
       });
       
       if (response.ok) {
@@ -252,6 +260,9 @@ const CustomerReservations = () => {
         const localReservations = JSON.parse(localStorage.getItem(userSpecificKey) || '[]');
         const updatedLocal = localReservations.filter((res: any) => res.id !== reservationId);
         localStorage.setItem(userSpecificKey, JSON.stringify(updatedLocal));
+        
+        // Update order count immediately for better UX
+        decrementOrderCount();
         
         // Close modal and reset
         setDeleteModalOpen(false);
@@ -285,23 +296,34 @@ const CustomerReservations = () => {
           
           alert('Reservation was already removed from the system. Local data has been cleaned up.');
         } else if (response.status === 401) {
-          // Authentication error
-          alert('Your session has expired. Please log in again.');
+          // Authentication error - but don't force logout, just show message
+          console.log('🗑️❌ 401 Authentication error - token may be expired');
+          alert('Your session may have expired. Please try again in a moment, or refresh the page if the issue persists.');
         } else if (response.status === 403) {
           // Permission error
+          console.log('🗑️❌ 403 Permission error');
           alert('You do not have permission to delete this reservation.');
         } else {
           // Other errors
+          console.log('🗑️❌ Other error:', response.status, errorData);
           alert(`Failed to delete reservation: ${errorData.error || 'Unknown error'}`);
         }
       }
     } catch (error) {
-      console.error('🗑️💥 Delete reservation network error:', error);
+      console.error('🗑️💥 Delete reservation network error:', {
+        error,
+        errorMessage: error instanceof Error ? error.message : 'Unknown error',
+        errorType: error instanceof Error ? error.constructor.name : typeof error
+      });
       
       // Check if it's a network error vs other error
       if (error instanceof TypeError && error.message.includes('fetch')) {
         alert('Network error. Please check your connection and try again.');
+      } else if (error instanceof Error && error.message.includes('Session expired')) {
+        console.log('🗑️💥 Session expired error caught - not forcing logout');
+        alert('Session expired. Please try the action again.');
       } else {
+        console.log('🗑️💥 Unknown error caught:', error);
         alert('Failed to delete reservation. Please try again.');
       }
     } finally {
@@ -314,12 +336,7 @@ const CustomerReservations = () => {
     
     try {
       const baseUrl = window.location.origin;
-      const response = await fetch(`${baseUrl}/api/customers/${user.id}/wishlist`, {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('localpick_token')}`,
-          'Content-Type': 'application/json'
-        }
-      });
+      const response = await authApiService.authenticatedFetch(`${baseUrl}/api/customers/${user.id}/wishlist`);
       
       if (response.ok) {
         const items = await response.json();
@@ -337,12 +354,8 @@ const CustomerReservations = () => {
     setRemovingFromWishlist(wishlistItemId);
     try {
       const baseUrl = window.location.origin;
-      const response = await fetch(`${baseUrl}/api/wishlist/${wishlistItemId}`, {
-        method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('localpick_token')}`,
-          'Content-Type': 'application/json'
-        }
+      const response = await authApiService.authenticatedFetch(`${baseUrl}/api/wishlist/${wishlistItemId}`, {
+        method: 'DELETE'
       });
       
       if (response.ok) {
