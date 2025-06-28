@@ -334,11 +334,44 @@ export function registerOrderRoutes(app: Express) {
     }
   });
 
-  // Get all orders (with filtering by customer, shop, type)
-  app.get('/api/orders', async (req, res) => {
+  // Get all orders (with filtering by customer, shop, type) - requires authentication
+  app.get('/api/orders', authenticate, async (req, res) => {
     try {
       const { customerId, shopId, type } = req.query;
       
+      if (!req.user) {
+        return res.status(401).json({ error: 'Authentication required' });
+      }
+      
+      // Build WHERE conditions array
+      const whereConditions = [];
+      
+      // Security check: ensure users can only access their own orders unless they're admin
+      if (customerId && req.user.role !== 'admin') {
+        if (req.user.id !== customerId) {
+          return res.status(403).json({ error: 'Access denied: You can only view your own orders' });
+        }
+      }
+      
+      // Filter by customer ID
+      if (customerId) {
+        whereConditions.push(eq(schema.orders.customer_id, customerId as string));
+      } else if (req.user.role === 'user') {
+        // If no customerId specified and user is a customer, default to their own orders
+        whereConditions.push(eq(schema.orders.customer_id, req.user.id));
+      }
+      
+      // Filter by shop ID
+      if (shopId) {
+        whereConditions.push(eq(schema.orders.shop_id, shopId as string));
+      }
+      
+      // Filter by type
+      if (type && type !== 'all') {
+        whereConditions.push(eq(schema.orders.order_type, type as string));
+      }
+      
+      // Base query
       let query = db.select({
         order: schema.orders,
         product: schema.products,
@@ -346,23 +379,15 @@ export function registerOrderRoutes(app: Express) {
       })
         .from(schema.orders)
         .leftJoin(schema.products, eq(schema.orders.product_id, schema.products.id))
-        .leftJoin(schema.shops, eq(schema.orders.shop_id, schema.shops.id))
-        .orderBy(desc(schema.orders.created_at));
+        .leftJoin(schema.shops, eq(schema.orders.shop_id, schema.shops.id));
       
-      // Filter by customer ID
-      if (customerId) {
-        query = query.where(eq(schema.orders.customer_id, customerId as string));
+      // Apply WHERE conditions if any
+      if (whereConditions.length > 0) {
+        query = query.where(whereConditions.length === 1 ? whereConditions[0] : and(...whereConditions));
       }
       
-      // Filter by shop ID
-      if (shopId) {
-        query = query.where(eq(schema.orders.shop_id, shopId as string));
-      }
-      
-      // Filter by type
-      if (type && type !== 'all') {
-        query = query.where(eq(schema.orders.order_type, type as string));
-      }
+      // Add ordering
+      query = query.orderBy(desc(schema.orders.created_at));
       
       const orders = await query;
       

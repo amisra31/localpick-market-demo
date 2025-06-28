@@ -98,12 +98,15 @@ const CustomerReservations = () => {
       return updated;
     });
     
-    // Also update localStorage for backward compatibility
-    const localReservations = JSON.parse(localStorage.getItem('localpick_customer_reservations') || '[]');
-    const updatedLocal = localReservations.map((res: any) => 
-      res.id === updatedOrder.id ? { ...res, status: updatedOrder.status } : res
-    );
-    localStorage.setItem('localpick_customer_reservations', JSON.stringify(updatedLocal));
+    // Also update localStorage for backward compatibility (user-specific)
+    if (user) {
+      const userSpecificKey = `localpick_customer_reservations_${user.id}`;
+      const localReservations = JSON.parse(localStorage.getItem(userSpecificKey) || '[]');
+      const updatedLocal = localReservations.map((res: any) => 
+        res.id === updatedOrder.id ? { ...res, status: updatedOrder.status } : res
+      );
+      localStorage.setItem(userSpecificKey, JSON.stringify(updatedLocal));
+    }
   });
 
   useEffect(() => {
@@ -126,27 +129,34 @@ const CustomerReservations = () => {
       // Load from database instead of localStorage
       const dbReservations = await enhancedDataService.getReservationsByCustomer(user.id);
       
-      // Also check localStorage for backward compatibility
-      const localReservations = JSON.parse(localStorage.getItem('localpick_customer_reservations') || '[]');
+      // Also check localStorage for backward compatibility (user-specific key)
+      const userSpecificKey = `localpick_customer_reservations_${user.id}`;
+      const localReservations = JSON.parse(localStorage.getItem(userSpecificKey) || '[]');
       
-      // Combine and deduplicate
-      const allReservations = [...dbReservations, ...localReservations];
+      // Filter localStorage reservations to only include current user's reservations
+      const filteredLocalReservations = localReservations.filter((res: any) => res.customerId === user.id);
+      
+      // Combine and deduplicate with better ID matching
+      const allReservations = [...dbReservations, ...filteredLocalReservations];
       const uniqueReservations = allReservations.filter((reservation, index, self) => 
-        index === self.findIndex(r => r.id === reservation.id)
+        index === self.findIndex(r => String(r.id) === String(reservation.id))
       );
       
-      // Filter out cancelled orders
+      // Filter out cancelled orders and ensure all reservations belong to current user
       const activeReservations = uniqueReservations.filter(
-        reservation => reservation.status !== 'cancelled'
+        reservation => reservation.status !== 'cancelled' && reservation.customerId === user.id
       );
       
       setReservations(activeReservations);
     } catch (error) {
       console.error('Failed to load reservations:', error);
-      // Fallback to localStorage
-      const savedReservations = JSON.parse(localStorage.getItem('localpick_customer_reservations') || '[]');
-      // Filter out cancelled orders from localStorage too
-      const activeLocalReservations = savedReservations.filter((r: any) => r.status !== 'cancelled');
+      // Fallback to localStorage (user-specific)
+      const userSpecificKey = `localpick_customer_reservations_${user.id}`;
+      const savedReservations = JSON.parse(localStorage.getItem(userSpecificKey) || '[]');
+      // Filter out cancelled orders and ensure user ownership
+      const activeLocalReservations = savedReservations.filter((r: any) => 
+        r.status !== 'cancelled' && r.customerId === user.id
+      );
       setReservations(activeLocalReservations);
     }
   };
@@ -189,8 +199,8 @@ const CustomerReservations = () => {
   };
 
   const getReservationCount = () => {
-    const savedReservations = JSON.parse(localStorage.getItem('localpick_customer_reservations') || '[]');
-    return savedReservations.length;
+    // Use current reservations state instead of localStorage to ensure accuracy
+    return reservations.length;
   };
 
   const handleDeleteClick = (reservation: CustomerReservation) => {
@@ -205,6 +215,22 @@ const CustomerReservations = () => {
     setCancellingReservation(reservationId);
     
     try {
+      // Check if reservation still exists in current state (prevent race conditions)
+      const currentReservation = reservations.find(res => res.id === reservationId);
+      if (!currentReservation) {
+        console.log('Reservation already removed from local state');
+        setDeleteModalOpen(false);
+        setReservationToDelete(null);
+        setCancellingReservation(null);
+        return;
+      }
+      
+      console.log('🗑️ Attempting to delete reservation:', {
+        id: reservationId,
+        userId: user.id,
+        customerName: reservationToDelete.customerName
+      });
+      
       // Get base URL for API calls
       const baseUrl = window.location.origin;
       const response = await fetch(`${baseUrl}/api/orders/${reservationId}`, {
@@ -216,27 +242,68 @@ const CustomerReservations = () => {
       });
       
       if (response.ok) {
-        // Remove from local state
+        console.log('🗑️✅ API deletion successful');
+        
+        // Remove from local state immediately for responsive UI
         setReservations(prev => prev.filter(res => res.id !== reservationId));
         
-        // Also remove from localStorage
-        const localReservations = JSON.parse(localStorage.getItem('localpick_customer_reservations') || '[]');
+        // Also remove from localStorage (user-specific)
+        const userSpecificKey = `localpick_customer_reservations_${user.id}`;
+        const localReservations = JSON.parse(localStorage.getItem(userSpecificKey) || '[]');
         const updatedLocal = localReservations.filter((res: any) => res.id !== reservationId);
-        localStorage.setItem('localpick_customer_reservations', JSON.stringify(updatedLocal));
+        localStorage.setItem(userSpecificKey, JSON.stringify(updatedLocal));
         
         // Close modal and reset
         setDeleteModalOpen(false);
         setReservationToDelete(null);
         
-        console.log('Reservation deleted successfully');
+        console.log('🗑️✅ Reservation deleted successfully');
       } else {
         const errorData = await response.json();
-        console.error('Failed to delete reservation:', errorData.error);
-        alert(`Failed to delete reservation: ${errorData.error || 'Unknown error'}`);
+        console.error('🗑️❌ API deletion failed:', {
+          status: response.status,
+          error: errorData.error,
+          reservationId
+        });
+        
+        // Handle specific error cases
+        if (response.status === 404) {
+          // Order not found in database - remove from local state anyway
+          console.log('🗑️🧹 Order not found in DB, cleaning up local state');
+          setReservations(prev => prev.filter(res => res.id !== reservationId));
+          
+          const userSpecificKey = `localpick_customer_reservations_${user.id}`;
+          const localReservations = JSON.parse(localStorage.getItem(userSpecificKey) || '[]');
+          const updatedLocal = localReservations.filter((res: any) => res.id !== reservationId);
+          localStorage.setItem(userSpecificKey, JSON.stringify(updatedLocal));
+          
+          setDeleteModalOpen(false);
+          setReservationToDelete(null);
+          
+          // Refresh data to ensure consistency
+          loadReservations();
+          
+          alert('Reservation was already removed from the system. Local data has been cleaned up.');
+        } else if (response.status === 401) {
+          // Authentication error
+          alert('Your session has expired. Please log in again.');
+        } else if (response.status === 403) {
+          // Permission error
+          alert('You do not have permission to delete this reservation.');
+        } else {
+          // Other errors
+          alert(`Failed to delete reservation: ${errorData.error || 'Unknown error'}`);
+        }
       }
     } catch (error) {
-      console.error('Failed to delete reservation:', error);
-      alert('Failed to delete reservation. Please try again.');
+      console.error('🗑️💥 Delete reservation network error:', error);
+      
+      // Check if it's a network error vs other error
+      if (error instanceof TypeError && error.message.includes('fetch')) {
+        alert('Network error. Please check your connection and try again.');
+      } else {
+        alert('Failed to delete reservation. Please try again.');
+      }
     } finally {
       setCancellingReservation(null);
     }
@@ -398,7 +465,7 @@ const CustomerReservations = () => {
                                 variant="ghost"
                                 size="sm"
                                 onClick={() => handleDeleteClick(reservation)}
-                                disabled={cancellingReservation === reservation.id}
+                                disabled={cancellingReservation === reservation.id || cancellingReservation !== null}
                                 className="text-red-600 hover:text-red-700 hover:bg-red-50 gap-1 px-2 h-7"
                               >
                                 <Trash2 className="w-3 h-3" />
