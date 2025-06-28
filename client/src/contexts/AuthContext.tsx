@@ -3,6 +3,47 @@ import React, { createContext, useContext, useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import { clearNavigationCache } from '@/utils/roleNavigation';
 
+// Helper function to get the correct base URL for email redirects
+const getBaseUrl = (): string => {
+  const currentHostname = window.location.hostname;
+  const currentOrigin = window.location.origin;
+  
+  console.log('🔗 Email redirect URL debug:', {
+    hostname: currentHostname,
+    origin: currentOrigin,
+    env: import.meta.env.VITE_PRODUCTION_URL
+  });
+  
+  // If we're on the Render production domain, use that
+  if (currentHostname === 'localpick-market-demo-osvx.onrender.com') {
+    console.log('🔗 Using Render production URL');
+    return 'https://localpick-market-demo-osvx.onrender.com';
+  }
+  
+  // Check if hostname contains render.com (for any Render deployment)
+  if (currentHostname.includes('onrender.com')) {
+    console.log('🔗 Using detected Render URL');
+    return currentOrigin;
+  }
+  
+  // Check if we're in any production environment (not localhost)
+  if (currentHostname !== 'localhost' && currentHostname !== '127.0.0.1') {
+    console.log('🔗 Using current origin for production');
+    return currentOrigin;
+  }
+  
+  // Check for environment variable (if set via build process)
+  const prodUrl = import.meta.env.VITE_PRODUCTION_URL;
+  if (prodUrl) {
+    console.log('🔗 Using environment variable URL');
+    return prodUrl;
+  }
+  
+  // Fallback to current origin (for local development)
+  console.log('🔗 Using current origin for development');
+  return currentOrigin;
+};
+
 // Simple JWT creation for demo users (in production, this would be done server-side)
 const createDemoToken = (user: any) => {
   const header = btoa(JSON.stringify({ alg: 'HS256', typ: 'JWT' }));
@@ -248,7 +289,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         email,
         password,
         options: {
-          emailRedirectTo: `${window.location.origin}/auth/callback`,
+          emailRedirectTo: `${getBaseUrl()}/auth/callback`,
           data: {
             role,
             name: email.split('@')[0],
@@ -296,7 +337,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         type: 'signup',
         email: email,
         options: {
-          emailRedirectTo: `${window.location.origin}/auth/callback`
+          emailRedirectTo: `${getBaseUrl()}/auth/callback`
         }
       });
       
