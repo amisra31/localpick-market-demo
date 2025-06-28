@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -7,10 +7,12 @@ import { Card, CardContent } from '@/components/ui/card';
 import { AuthHeader } from '@/components/auth/AuthHeader';
 import { ChatWindow } from '@/components/chat/ChatWindow';
 import { useChatThreads } from '@/hooks/useChatThreads';
-import { ArrowLeft, MessageSquare, ShoppingBag, Store, Loader2 } from 'lucide-react';
+import { ArrowLeft, ShoppingBag, Store, Loader2 } from 'lucide-react';
 import { useOrderCount } from '@/hooks/useOrderCount';
 
 const ChatOverview = () => {
+  const navigate = useNavigate();
+  const location = useLocation();
   const { 
     threads, 
     loading, 
@@ -34,6 +36,29 @@ const ChatOverview = () => {
   
   const getReservationCount = () => {
     return activeOrderCount;
+  };
+
+  const handleGoBack = () => {
+    // Use browser history to go back, with intelligent fallbacks
+    try {
+      // First check if we have a "from" location in state
+      const fromLocation = location.state?.from;
+      
+      if (fromLocation) {
+        // Navigate to the specific location we came from
+        navigate(fromLocation);
+      } else if (window.history.length > 1) {
+        // Use browser history to go back
+        navigate(-1);
+      } else {
+        // If no history, go to home page
+        navigate('/');
+      }
+    } catch (error) {
+      // Fallback to home if navigation fails
+      console.warn('Navigation failed, falling back to home:', error);
+      navigate('/');
+    }
   };
 
   const handleSendMessage = async (shopId: string, message: string) => {
@@ -65,27 +90,26 @@ const ChatOverview = () => {
           <div className="flex items-center justify-between">
             {/* Logo */}
             <div className="flex items-center space-x-2">
-              <Link to="/" className="flex items-center space-x-2">
+              <button 
+                onClick={handleGoBack}
+                className="flex items-center space-x-2 hover:opacity-80 transition-opacity"
+              >
                 <div className="w-8 h-8 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-lg flex items-center justify-center">
                   <ArrowLeft className="w-5 h-5 text-white" />
                 </div>
                 <h1 className="text-xl font-bold bg-gradient-to-r from-gray-900 to-gray-600 bg-clip-text text-transparent">
                   LocalPick
                 </h1>
-              </Link>
+              </button>
             </div>
 
-            {/* Center - Page Title */}
+            {/* Center - Empty space (removed My Chats title) */}
             <div className="hidden md:block">
-              <h2 className="text-lg font-semibold text-gray-800 flex items-center gap-2">
-                <MessageSquare className="w-5 h-5" />
-                My Chats
-                {totalUnread > 0 && (
-                  <Badge variant="destructive" className="ml-2">
-                    {totalUnread} unread
-                  </Badge>
-                )}
-              </h2>
+              {totalUnread > 0 && (
+                <Badge variant="destructive" className="text-sm">
+                  {totalUnread} unread message{totalUnread > 1 ? 's' : ''}
+                </Badge>
+              )}
             </div>
 
             {/* Right Side */}
@@ -113,7 +137,7 @@ const ChatOverview = () => {
         {threads.length === 0 ? (
           <div className="text-center py-16">
             <div className="w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-6">
-              <MessageSquare className="w-12 h-12 text-gray-400" />
+              <Store className="w-12 h-12 text-gray-400" />
             </div>
             <h3 className="text-xl font-semibold text-gray-900 mb-2">No chats yet</h3>
             <p className="text-gray-600 mb-8 max-w-md mx-auto">

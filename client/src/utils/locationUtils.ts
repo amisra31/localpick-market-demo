@@ -93,18 +93,72 @@ export const shareProduct = async (product: { name: string; price: number }, sho
   };
 
   try {
-    if (navigator.share && navigator.canShare && navigator.canShare(shareData)) {
+    // Check if Web Share API is available and we're in a secure context
+    if ('share' in navigator && window.isSecureContext) {
+      console.log('Using native Web Share API');
       await navigator.share(shareData);
       return true;
     } else {
-      // Fallback: copy URL to clipboard
+      // Fallback: copy URL to clipboard with user feedback
+      console.log('Web Share API not available, using clipboard fallback');
       const success = await copyToClipboard(window.location.href);
+      if (success) {
+        // Create temporary visual feedback for clipboard copy
+        const tempDiv = document.createElement('div');
+        tempDiv.textContent = 'Link copied to clipboard!';
+        tempDiv.style.cssText = `
+          position: fixed;
+          top: 50%;
+          left: 50%;
+          transform: translate(-50%, -50%);
+          background: #333;
+          color: white;
+          padding: 12px 24px;
+          border-radius: 8px;
+          z-index: 10000;
+          font-family: system-ui, -apple-system, sans-serif;
+          font-size: 14px;
+          box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        `;
+        document.body.appendChild(tempDiv);
+        setTimeout(() => {
+          if (document.body.contains(tempDiv)) {
+            document.body.removeChild(tempDiv);
+          }
+        }, 2000);
+      }
       return success;
     }
   } catch (error) {
     console.error('Error sharing:', error);
     // Fallback: copy URL to clipboard
-    return await copyToClipboard(window.location.href);
+    const success = await copyToClipboard(window.location.href);
+    if (success) {
+      // Show feedback for fallback too
+      const tempDiv = document.createElement('div');
+      tempDiv.textContent = 'Link copied to clipboard!';
+      tempDiv.style.cssText = `
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        background: #333;
+        color: white;
+        padding: 12px 24px;
+        border-radius: 8px;
+        z-index: 10000;
+        font-family: system-ui, -apple-system, sans-serif;
+        font-size: 14px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+      `;
+      document.body.appendChild(tempDiv);
+      setTimeout(() => {
+        if (document.body.contains(tempDiv)) {
+          document.body.removeChild(tempDiv);
+        }
+      }, 2000);
+    }
+    return success;
   }
 };
 

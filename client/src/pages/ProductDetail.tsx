@@ -246,15 +246,14 @@ const ProductDetail = () => {
   const handleShareProduct = async () => {
     if (!product || !shop) return;
     const success = await shareProduct(product, shop);
-    if (success) {
-      toast({ title: "Product shared successfully" });
-    } else {
+    if (!success) {
       toast({ 
         title: "Failed to share", 
         description: "Please try again",
         variant: "destructive" 
       });
     }
+    // No success toast - let the native share UI handle the feedback
   };
 
   const handleChatWithMerchant = () => {
@@ -316,7 +315,10 @@ const ProductDetail = () => {
               {isAuthenticated && (
                 <>
                   <ChatButton size="sm" />
-                  <Link to="/my-reservations">
+                  <Link 
+                    to="/my-reservations"
+                    state={{ from: `/product/${product.id}` }}
+                  >
                     <Button variant="outline" size="sm" className="gap-2 hover:bg-blue-50 transition-colors">
                       <ShoppingBag className="w-4 h-4" />
                       <span className="hidden sm:inline">My Reservations ({getReservationCount()})</span>

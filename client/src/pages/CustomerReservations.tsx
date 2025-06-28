@@ -1,6 +1,6 @@
 
 import { useState, useEffect } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -53,7 +53,10 @@ interface WishlistItem {
 
 const CustomerReservations = () => {
   const { user, isAuthenticated } = useAuth();
+  const navigate = useNavigate();
+  const location = useLocation();
   const [reservations, setReservations] = useState<CustomerReservation[]>([]);
+  const [isLoadingReservations, setIsLoadingReservations] = useState<boolean>(true);
   const [cancellingReservation, setCancellingReservation] = useState<string | null>(null);
   const [wishlistItems, setWishlistItems] = useState<WishlistItem[]>([]);
   const [removingFromWishlist, setRemovingFromWishlist] = useState<string | null>(null);
@@ -118,9 +121,9 @@ const CustomerReservations = () => {
     if (isAuthenticated && user) {
       loadReservations();
       loadWishlist();
-      // Set up polling for live updates
+      // Set up polling for live updates (without loading spinner)
       const interval = setInterval(() => {
-        loadReservations();
+        loadReservationsQuietly();
         loadWishlist();
       }, 10000); // Poll every 10 seconds
       return () => clearInterval(interval);
@@ -128,8 +131,12 @@ const CustomerReservations = () => {
   }, [isAuthenticated, user]);
 
   const loadReservations = async () => {
-    if (!user) return;
+    if (!user) {
+      setIsLoadingReservations(false);
+      return;
+    }
     
+    setIsLoadingReservations(true);
     try {
       // Load from database instead of localStorage
       const dbReservations = await enhancedDataService.getReservationsByCustomer(user.id);
@@ -163,6 +170,41 @@ const CustomerReservations = () => {
         r.status !== 'cancelled' && r.customerId === user.id
       );
       setReservations(activeLocalReservations);
+    } finally {
+      setIsLoadingReservations(false);
+    }
+  };
+
+  // Silent background loading for polling (no loading spinner)
+  const loadReservationsQuietly = async () => {
+    if (!user) return;
+    
+    try {
+      // Load from database instead of localStorage
+      const dbReservations = await enhancedDataService.getReservationsByCustomer(user.id);
+      
+      // Also check localStorage for backward compatibility (user-specific key)
+      const userSpecificKey = `localpick_customer_reservations_${user.id}`;
+      const localReservations = JSON.parse(localStorage.getItem(userSpecificKey) || '[]');
+      
+      // Filter localStorage reservations to only include current user's reservations
+      const filteredLocalReservations = localReservations.filter((res: any) => res.customerId === user.id);
+      
+      // Combine and deduplicate with better ID matching
+      const allReservations = [...dbReservations, ...filteredLocalReservations];
+      const uniqueReservations = allReservations.filter((reservation, index, self) => 
+        index === self.findIndex(r => String(r.id) === String(reservation.id))
+      );
+      
+      // Filter out cancelled orders and ensure all reservations belong to current user
+      const activeReservations = uniqueReservations.filter(
+        reservation => reservation.status !== 'cancelled' && reservation.customerId === user.id
+      );
+      
+      setReservations(activeReservations);
+    } catch (error) {
+      console.error('Failed to quietly load reservations:', error);
+      // Don't update state on background fetch errors to prevent flickering
     }
   };
 
@@ -292,7 +334,7 @@ const CustomerReservations = () => {
           setReservationToDelete(null);
           
           // Refresh data to ensure consistency
-          loadReservations();
+          loadReservationsQuietly();
           
           alert('Reservation was already removed from the system. Local data has been cleaned up.');
         } else if (response.status === 401) {
@@ -379,6 +421,29 @@ const CustomerReservations = () => {
     }, {} as Record<string, WishlistItem[]>);
   };
 
+  const handleGoBack = () => {
+    // Use browser history to go back, with intelligent fallbacks
+    try {
+      // First check if we have a "from" location in state
+      const fromLocation = location.state?.from;
+      
+      if (fromLocation) {
+        // Navigate to the specific location we came from
+        navigate(fromLocation);
+      } else if (window.history.length > 1) {
+        // Use browser history to go back
+        navigate(-1);
+      } else {
+        // If no history, go to home page
+        navigate('/');
+      }
+    } catch (error) {
+      // Fallback to home if navigation fails
+      console.warn('Navigation failed, falling back to home:', error);
+      navigate('/');
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Consistent Header */}
@@ -387,14 +452,17 @@ const CustomerReservations = () => {
           <div className="flex items-center justify-between">
             {/* Logo */}
             <div className="flex items-center space-x-2">
-              <Link to="/" className="flex items-center space-x-2">
+              <button 
+                onClick={handleGoBack}
+                className="flex items-center space-x-2 hover:opacity-80 transition-opacity"
+              >
                 <div className="w-8 h-8 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-lg flex items-center justify-center">
                   <ArrowLeft className="w-5 h-5 text-white" />
                 </div>
                 <h1 className="text-xl font-bold bg-gradient-to-r from-gray-900 to-gray-600 bg-clip-text text-transparent">
                   LocalPick
                 </h1>
-              </Link>
+              </button>
             </div>
 
 
@@ -424,7 +492,14 @@ const CustomerReservations = () => {
       </header>
 
       <div className="container mx-auto px-4 py-8 max-w-4xl">
-        {reservations.length > 0 ? (
+        {isLoadingReservations ? (
+          <div className="text-center py-16">
+            <div className="flex items-center justify-center gap-2 mb-4">
+              <div className="w-6 h-6 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+              <span className="text-gray-600">Loading your reservations...</span>
+            </div>
+          </div>
+        ) : reservations.length > 0 ? (
           <div className="space-y-4">
             {/* My Reservations Section Title */}
             <div className="flex items-center gap-2 mb-6">

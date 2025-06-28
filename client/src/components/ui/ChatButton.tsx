@@ -1,4 +1,4 @@
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { MessageSquare } from "lucide-react";
@@ -57,6 +57,7 @@ export const ChatButton = ({
 }: ChatButtonProps) => {
   const { isAuthenticated } = useAuth();
   const { getTotalUnreadCount } = useChatThreads();
+  const location = useLocation();
 
   // Don't render if user is not authenticated
   if (!isAuthenticated) {
@@ -67,7 +68,10 @@ export const ChatButton = ({
   const hasUnreadMessages = showUnreadBadge && unreadCount > 0;
 
   return (
-    <Link to="/chat">
+    <Link 
+      to="/chat" 
+      state={{ from: location.pathname }}
+    >
       <Button 
         variant={variant} 
         size={size} 
