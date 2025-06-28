@@ -8,9 +8,19 @@ import { useAuth } from "@/contexts/AuthContext";
 import { enhancedDataService } from "@/services/enhancedDataService";
 import { useChatWebSocket } from "@/hooks/useChatWebSocket";
 import { useCustomerOrderSync } from "@/hooks/useOrderWebSocket";
-import { ArrowLeft, Clock, MapPin, ShoppingBag, Store, MessageSquare, X, Heart, Trash2 } from "lucide-react";
+import { ArrowLeft, Clock, MapPin, ShoppingBag, Store, MessageSquare, X, Heart, Trash2, AlertTriangle } from "lucide-react";
 import { SignOutButton } from "@/components/SignOutButton";
 import { AuthHeader } from "@/components/auth/AuthHeader";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 interface CustomerReservation {
   id: string;
@@ -45,6 +55,8 @@ const CustomerReservations = () => {
   const [cancellingReservation, setCancellingReservation] = useState<string | null>(null);
   const [wishlistItems, setWishlistItems] = useState<WishlistItem[]>([]);
   const [removingFromWishlist, setRemovingFromWishlist] = useState<string | null>(null);
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [reservationToDelete, setReservationToDelete] = useState<CustomerReservation | null>(null);
 
   // Real-time order status updates via WebSocket
   const { isConnected } = useCustomerOrderSync((updatedOrder) => {
@@ -62,6 +74,12 @@ const CustomerReservations = () => {
       if (!orderToUpdate) {
         console.log('⚠️ Customer: Order not found in current reservations for update:', updatedOrder.id);
         return prev;
+      }
+      
+      // If the status is being updated to cancelled, remove it from the list
+      if (updatedOrder.status === 'cancelled') {
+        console.log('👤🗑️ Removing cancelled order from view:', updatedOrder.id);
+        return prev.filter(res => res.id !== updatedOrder.id);
       }
       
       const updated = prev.map(res => 
@@ -117,12 +135,19 @@ const CustomerReservations = () => {
         index === self.findIndex(r => r.id === reservation.id)
       );
       
-      setReservations(uniqueReservations);
+      // Filter out cancelled orders
+      const activeReservations = uniqueReservations.filter(
+        reservation => reservation.status !== 'cancelled'
+      );
+      
+      setReservations(activeReservations);
     } catch (error) {
       console.error('Failed to load reservations:', error);
       // Fallback to localStorage
       const savedReservations = JSON.parse(localStorage.getItem('localpick_customer_reservations') || '[]');
-      setReservations(savedReservations);
+      // Filter out cancelled orders from localStorage too
+      const activeLocalReservations = savedReservations.filter((r: any) => r.status !== 'cancelled');
+      setReservations(activeLocalReservations);
     }
   };
 
@@ -168,16 +193,21 @@ const CustomerReservations = () => {
     return savedReservations.length;
   };
 
-  const handleCancelReservation = async (reservationId: string) => {
-    if (!user) return;
+  const handleDeleteClick = (reservation: CustomerReservation) => {
+    setReservationToDelete(reservation);
+    setDeleteModalOpen(true);
+  };
+
+  const handleCancelReservation = async () => {
+    if (!user || !reservationToDelete) return;
     
-    // Show confirmation dialog
-    const confirmed = window.confirm('Are you sure you want to cancel this reservation?');
-    if (!confirmed) return;
-    
+    const reservationId = reservationToDelete.id;
     setCancellingReservation(reservationId);
+    
     try {
-      const response = await fetch(`/api/orders/${reservationId}`, {
+      // Get base URL for API calls
+      const baseUrl = window.location.origin;
+      const response = await fetch(`${baseUrl}/api/orders/${reservationId}`, {
         method: 'DELETE',
         headers: {
           'Content-Type': 'application/json',
@@ -194,11 +224,19 @@ const CustomerReservations = () => {
         const updatedLocal = localReservations.filter((res: any) => res.id !== reservationId);
         localStorage.setItem('localpick_customer_reservations', JSON.stringify(updatedLocal));
         
-        // Show success message
-        console.log('Reservation cancelled and merchant notified');
+        // Close modal and reset
+        setDeleteModalOpen(false);
+        setReservationToDelete(null);
+        
+        console.log('Reservation deleted successfully');
+      } else {
+        const errorData = await response.json();
+        console.error('Failed to delete reservation:', errorData.error);
+        alert(`Failed to delete reservation: ${errorData.error || 'Unknown error'}`);
       }
     } catch (error) {
-      console.error('Failed to cancel reservation:', error);
+      console.error('Failed to delete reservation:', error);
+      alert('Failed to delete reservation. Please try again.');
     } finally {
       setCancellingReservation(null);
     }
@@ -208,7 +246,8 @@ const CustomerReservations = () => {
     if (!user) return;
     
     try {
-      const response = await fetch(`/api/customers/${user.id}/wishlist`, {
+      const baseUrl = window.location.origin;
+      const response = await fetch(`${baseUrl}/api/customers/${user.id}/wishlist`, {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('localpick_token')}`,
           'Content-Type': 'application/json'
@@ -230,7 +269,8 @@ const CustomerReservations = () => {
     
     setRemovingFromWishlist(wishlistItemId);
     try {
-      const response = await fetch(`/api/wishlist/${wishlistItemId}`, {
+      const baseUrl = window.location.origin;
+      const response = await fetch(`${baseUrl}/api/wishlist/${wishlistItemId}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('localpick_token')}`,
@@ -277,10 +317,6 @@ const CustomerReservations = () => {
               </Link>
             </div>
 
-            {/* Center - Page Title */}
-            <div className="hidden md:block">
-              <h2 className="text-lg font-semibold text-gray-800">My Reservations</h2>
-            </div>
 
             {/* Right Side */}
             <div className="flex items-center space-x-3">
@@ -310,37 +346,22 @@ const CustomerReservations = () => {
       <div className="container mx-auto px-4 py-8 max-w-4xl">
         {reservations.length > 0 ? (
           <div className="space-y-4">
-            {/* Header Stats */}
-            <div className="mb-6">
-              <p className="text-gray-600 text-sm">
-                {reservations.length} reservation{reservations.length > 1 ? 's' : ''}
-              </p>
+            {/* My Reservations Section Title */}
+            <div className="flex items-center gap-2 mb-6">
+              <ShoppingBag className="w-5 h-5 text-blue-600" />
+              <h3 className="text-lg font-semibold text-gray-900">My Reservations</h3>
+              <Badge variant="secondary">{reservations.length} {reservations.length > 1 ? 'items' : 'item'}</Badge>
             </div>
 
             {/* Reservation List - Amazon Style */}
             <div className="space-y-3">
               {reservations.map((reservation) => {
                 const statusInfo = getStatusDisplay(reservation.status || 'pending');
-                const canCancel = !['completed', 'cancelled', 'delivered'].includes(reservation.status || 'pending');
                 
                 return (
                   <Card key={reservation.id} className="hover:shadow-md transition-all duration-200 border border-gray-200 hover:border-gray-300">
                     <CardContent className="p-4">
                       <div className="flex gap-4">
-                        {/* Product Image */}
-                        <Link to={`/product/${reservation.productId}`} className="flex-shrink-0">
-                          <div className="w-20 h-20 bg-gray-100 rounded-lg overflow-hidden hover:opacity-75 transition-opacity">
-                            <img 
-                              src={reservation.productImage || 'https://images.unsplash.com/photo-1560472354-b33ff0c44a43?w=80&h=80&fit=crop&crop=center'} 
-                              alt={reservation.productName}
-                              className="w-full h-full object-cover"
-                              onError={(e) => {
-                                e.currentTarget.src = 'https://images.unsplash.com/photo-1560472354-b33ff0c44a43?w=80&h=80&fit=crop&crop=center';
-                              }}
-                            />
-                          </div>
-                        </Link>
-                        
                         {/* Product Info */}
                         <div className="flex-1 min-w-0">
                           <div className="flex items-start justify-between">
@@ -359,7 +380,7 @@ const CustomerReservations = () => {
                               </div>
                               <div className="flex items-center gap-2 text-sm text-gray-500">
                                 <Clock className="w-3 h-3" />
-                                <span>Reserved {getTimeAgo(reservation.createdAt || reservation.timestamp)}</span>
+                                <span>Reserved {getTimeAgo(reservation.createdAt)}</span>
                               </div>
                             </div>
                             
@@ -372,16 +393,17 @@ const CustomerReservations = () => {
                                 {statusInfo.text}
                               </Badge>
                               
-                              {/* Cancel Button */}
-                              {canCancel && (
-                                <button
-                                  onClick={() => handleCancelReservation(reservation.id)}
-                                  disabled={cancellingReservation === reservation.id}
-                                  className="text-xs text-red-600 hover:text-red-700 hover:underline disabled:opacity-50"
-                                >
-                                  {cancellingReservation === reservation.id ? 'Cancelling...' : 'Cancel'}
-                                </button>
-                              )}
+                              {/* Delete Button - Always Visible */}
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleDeleteClick(reservation)}
+                                disabled={cancellingReservation === reservation.id}
+                                className="text-red-600 hover:text-red-700 hover:bg-red-50 gap-1 px-2 h-7"
+                              >
+                                <Trash2 className="w-3 h-3" />
+                                <span className="text-xs">Delete</span>
+                              </Button>
                             </div>
                           </div>
                         </div>
@@ -414,46 +436,30 @@ const CustomerReservations = () => {
                       {items.map((item) => (
                         <Card key={item.id} className="hover:shadow-md transition-all duration-200">
                           <CardContent className="p-4">
-                            <div className="flex gap-3">
-                              <Link to={`/product/${item.productId}`} className="flex-shrink-0">
-                                <div className="w-16 h-16 bg-gray-100 rounded-lg overflow-hidden hover:opacity-75 transition-opacity">
-                                  <img 
-                                    src={item.productImage || 'https://images.unsplash.com/photo-1560472354-b33ff0c44a43?w=64&h=64&fit=crop&crop=center'} 
-                                    alt={item.productName}
-                                    className="w-full h-full object-cover"
-                                    onError={(e) => {
-                                      e.currentTarget.src = 'https://images.unsplash.com/photo-1560472354-b43ff0c44a43?w=64&h=64&fit=crop&crop=center';
-                                    }}
-                                  />
-                                </div>
-                              </Link>
-                              <div className="flex-1 min-w-0">
-                                <Link to={`/product/${item.productId}`} className="hover:text-blue-600">
-                                  <h5 className="font-medium text-sm text-gray-900 leading-tight mb-1 hover:underline">
-                                    {item.productName}
-                                  </h5>
-                                </Link>
-                                <div className="flex items-center gap-1 text-xs text-gray-600 mb-2">
-                                  <Store className="w-3 h-3" />
-                                  <span className="truncate">{item.shopName}</span>
-                                </div>
-                                <div className="flex items-center justify-between">
-                                  <span className="font-semibold text-green-600">${item.productPrice}</span>
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={() => handleRemoveFromWishlist(item.id)}
-                                    disabled={removingFromWishlist === item.id}
-                                    className="text-red-500 hover:text-red-700 hover:bg-red-50 p-1 h-auto"
-                                  >
-                                    {removingFromWishlist === item.id ? (
-                                      <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-red-500"></div>
-                                    ) : (
-                                      <Trash2 className="w-3 h-3" />
-                                    )}
-                                  </Button>
-                                </div>
-                              </div>
+                            <Link to={`/product/${item.productId}`} className="hover:text-blue-600">
+                              <h5 className="font-medium text-sm text-gray-900 leading-tight mb-1 hover:underline">
+                                {item.productName}
+                              </h5>
+                            </Link>
+                            <div className="flex items-center gap-1 text-xs text-gray-600 mb-2">
+                              <Store className="w-3 h-3" />
+                              <span className="truncate">{item.shopName}</span>
+                            </div>
+                            <div className="flex items-center justify-between">
+                              <span className="font-semibold text-green-600">${item.productPrice}</span>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleRemoveFromWishlist(item.id)}
+                                disabled={removingFromWishlist === item.id}
+                                className="text-red-500 hover:text-red-700 hover:bg-red-50 p-1 h-auto"
+                              >
+                                {removingFromWishlist === item.id ? (
+                                  <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-red-500"></div>
+                                ) : (
+                                  <Trash2 className="w-3 h-3" />
+                                )}
+                              </Button>
                             </div>
                           </CardContent>
                         </Card>
@@ -480,46 +486,30 @@ const CustomerReservations = () => {
                       {items.map((item) => (
                         <Card key={item.id} className="hover:shadow-md transition-all duration-200">
                           <CardContent className="p-4">
-                            <div className="flex gap-3">
-                              <Link to={`/product/${item.productId}`} className="flex-shrink-0">
-                                <div className="w-16 h-16 bg-gray-100 rounded-lg overflow-hidden hover:opacity-75 transition-opacity">
-                                  <img 
-                                    src={item.productImage || 'https://images.unsplash.com/photo-1560472354-b33ff0c44a43?w=64&h=64&fit=crop&crop=center'} 
-                                    alt={item.productName}
-                                    className="w-full h-full object-cover"
-                                    onError={(e) => {
-                                      e.currentTarget.src = 'https://images.unsplash.com/photo-1560472354-b33ff0c44a43?w=64&h=64&fit=crop&crop=center';
-                                    }}
-                                  />
-                                </div>
-                              </Link>
-                              <div className="flex-1 min-w-0">
-                                <Link to={`/product/${item.productId}`} className="hover:text-blue-600">
-                                  <h5 className="font-medium text-sm text-gray-900 leading-tight mb-1 hover:underline">
-                                    {item.productName}
-                                  </h5>
-                                </Link>
-                                <div className="flex items-center gap-1 text-xs text-gray-600 mb-2">
-                                  <Store className="w-3 h-3" />
-                                  <span className="truncate">{item.shopName}</span>
-                                </div>
-                                <div className="flex items-center justify-between">
-                                  <span className="font-semibold text-green-600">${item.productPrice}</span>
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={() => handleRemoveFromWishlist(item.id)}
-                                    disabled={removingFromWishlist === item.id}
-                                    className="text-red-500 hover:text-red-700 hover:bg-red-50 p-1 h-auto"
-                                  >
-                                    {removingFromWishlist === item.id ? (
-                                      <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-red-500"></div>
-                                    ) : (
-                                      <Trash2 className="w-3 h-3" />
-                                    )}
-                                  </Button>
-                                </div>
-                              </div>
+                            <Link to={`/product/${item.productId}`} className="hover:text-blue-600">
+                              <h5 className="font-medium text-sm text-gray-900 leading-tight mb-1 hover:underline">
+                                {item.productName}
+                              </h5>
+                            </Link>
+                            <div className="flex items-center gap-1 text-xs text-gray-600 mb-2">
+                              <Store className="w-3 h-3" />
+                              <span className="truncate">{item.shopName}</span>
+                            </div>
+                            <div className="flex items-center justify-between">
+                              <span className="font-semibold text-green-600">${item.productPrice}</span>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleRemoveFromWishlist(item.id)}
+                                disabled={removingFromWishlist === item.id}
+                                className="text-red-500 hover:text-red-700 hover:bg-red-50 p-1 h-auto"
+                              >
+                                {removingFromWishlist === item.id ? (
+                                  <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-red-500"></div>
+                                ) : (
+                                  <Trash2 className="w-3 h-3" />
+                                )}
+                              </Button>
                             </div>
                           </CardContent>
                         </Card>
@@ -541,23 +531,151 @@ const CustomerReservations = () => {
             </div>
           </div>
         ) : (
-          <div className="text-center py-16">
-            <div className="w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-6">
-              <ShoppingBag className="w-12 h-12 text-gray-400" />
+          <div>
+            {/* No reservations message */}
+            <div className="text-center py-8 mb-8">
+              <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <ShoppingBag className="w-10 h-10 text-gray-400" />
+              </div>
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">No reservations yet</h3>
+              <p className="text-gray-600 mb-6 max-w-md mx-auto">
+                When you reserve products, they'll appear here.
+              </p>
+              <Link to="/">
+                <Button size="sm" className="gap-2">
+                  <ShoppingBag className="w-4 h-4" />
+                  Browse Products
+                </Button>
+              </Link>
             </div>
-            <h3 className="text-xl font-semibold text-gray-900 mb-2">No reservations yet</h3>
-            <p className="text-gray-600 mb-8 max-w-md mx-auto">
-              When you reserve products, they'll appear here. Start browsing to make your first reservation.
-            </p>
-            <Link to="/">
-              <Button size="lg" className="gap-2">
-                <ShoppingBag className="w-4 h-4" />
-                Browse Products
-              </Button>
-            </Link>
+
+            {/* Wishlisted Items Section */}
+            {wishlistItems.length > 0 && (
+              <div className="border-t pt-8">
+                <div className="flex items-center gap-2 mb-6">
+                  <Heart className="w-5 h-5 text-red-500" />
+                  <h3 className="text-lg font-semibold text-gray-900">Your Wishlisted Items</h3>
+                  <Badge variant="secondary">{wishlistItems.length} items</Badge>
+                </div>
+                
+                {Object.entries(groupWishlistByCategory(wishlistItems)).map(([category, items]) => (
+                  <div key={category} className="mb-8">
+                    <h4 className="font-medium text-gray-700 mb-4">{category}</h4>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                      {items.map((item) => (
+                        <Card key={item.id} className="hover:shadow-lg transition-all duration-200 border-gray-200">
+                          <CardContent className="p-4">
+                            <div className="relative">
+                              {/* Wishlist Badge */}
+                              <div className="absolute top-0 right-0 z-10">
+                                <Badge variant="secondary" className="bg-red-50 text-red-700 border-red-200 text-xs">
+                                  <Heart className="w-3 h-3 mr-1 fill-current" />
+                                  Wishlisted
+                                </Badge>
+                              </div>
+                              
+                              <Link to={`/product/${item.productId}`} className="hover:text-blue-600">
+                                <h5 className="font-semibold text-gray-900 mb-1 hover:underline line-clamp-2">
+                                  {item.productName}
+                                </h5>
+                              </Link>
+                              <div className="flex items-center gap-2 text-sm text-gray-600 mb-2">
+                                <Store className="w-4 h-4" />
+                                <span className="truncate">{item.shopName}</span>
+                              </div>
+                              <div className="text-lg font-bold text-green-600 mb-3">
+                                ${item.productPrice}
+                              </div>
+                              
+                              <div className="flex gap-2">
+                                <Link to={`/product/${item.productId}`} className="flex-1">
+                                  <Button size="sm" className="w-full">
+                                    Reserve Now
+                                  </Button>
+                                </Link>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => handleRemoveFromWishlist(item.id)}
+                                  disabled={removingFromWishlist === item.id}
+                                  className="text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200"
+                                >
+                                  {removingFromWishlist === item.id ? (
+                                    <span className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                                  ) : (
+                                    <Heart className="w-4 h-4" />
+                                  )}
+                                </Button>
+                              </div>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         )}
       </div>
+      
+      {/* Delete Confirmation Modal */}
+      <AlertDialog open={deleteModalOpen} onOpenChange={setDeleteModalOpen}>
+        <AlertDialogContent className="max-w-md">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="w-5 h-5 text-red-600" />
+              Delete Reservation
+            </AlertDialogTitle>
+            <AlertDialogDescription className="space-y-3">
+              <p>Are you sure you want to delete this reservation?</p>
+              {reservationToDelete && (
+                <div className="bg-gray-50 p-3 rounded-lg space-y-2">
+                  <div className="flex items-center gap-2">
+                    <Store className="w-4 h-4 text-gray-500" />
+                    <span className="text-sm font-medium">{reservationToDelete.productName}</span>
+                  </div>
+                  <div className="text-sm text-gray-600">
+                    Shop: {reservationToDelete.shopName}
+                  </div>
+                  <div className="text-sm font-semibold text-gray-900">
+                    ${reservationToDelete.productPrice}
+                  </div>
+                </div>
+              )}
+              <p className="text-sm text-red-600 font-medium">
+                This action cannot be undone. The reservation will be permanently removed.
+              </p>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel 
+              onClick={() => {
+                setDeleteModalOpen(false);
+                setReservationToDelete(null);
+              }}
+              className="hover:bg-gray-100"
+            >
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleCancelReservation}
+              disabled={cancellingReservation !== null}
+              className="bg-red-600 hover:bg-red-700 text-white"
+            >
+              {cancellingReservation !== null ? (
+                <span className="flex items-center gap-2">
+                  <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  Deleting...
+                </span>
+              ) : (
+                'Delete Reservation'
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };

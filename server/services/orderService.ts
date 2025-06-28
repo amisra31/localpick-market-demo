@@ -119,13 +119,9 @@ export class OrderService {
         return { success: false, error: 'Order not found' };
       }
 
-      // Check if order can be cancelled
-      if (!this.canOrderBeCancelled(existingOrder.status)) {
-        return { 
-          success: false, 
-          error: `Order cannot be cancelled when status is ${existingOrder.status}` 
-        };
-      }
+      // Allow cancellation/deletion for all statuses when requested by customer or admin
+      // This enables the "Delete" functionality to work for all orders
+      console.log(`🗑️ Cancelling order ${orderId} with status ${existingOrder.status}`);
 
       // Use centralized status update
       return await this.updateOrderStatus({
