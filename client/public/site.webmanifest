@@ -1,0 +1,22 @@
+{
+  "name": "LocalPick - Discover Local Treasures",
+  "short_name": "LocalPick",
+  "description": "Discover and reserve unique products from local shops in your area",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml"
+    },
+    {
+      "src": "/logo-icon.svg",
+      "sizes": "256x256",
+      "type": "image/svg+xml"
+    }
+  ],
+  "theme_color": "#2563eb",
+  "background_color": "#ffffff",
+  "display": "standalone",
+  "start_url": "/",
+  "scope": "/"
+}
